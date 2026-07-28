@@ -12,7 +12,7 @@ interface TransactionItemCardProps {
 
 export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
   transaction,
-  currency = '$',
+  currency = 'UGX',
   onPress,
 }) => {
   const isIncome = transaction.type === 'income';

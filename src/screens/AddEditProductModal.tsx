@@ -41,11 +41,11 @@ export const AddEditProductModal = ({ route, navigation }: any) => {
       return;
     }
     const bPrice = parseFloat(buyPrice);
-    const sPrice = parseFloat(sellPrice);
+    const sPrice = sellPrice.trim() ? parseFloat(sellPrice) : bPrice;
     const qty = parseInt(quantity, 10);
 
-    if (isNaN(bPrice) || isNaN(sPrice) || isNaN(qty)) {
-      Alert.alert('Validation Error', 'Please enter valid numerical values for prices and quantity.');
+    if (isNaN(bPrice) || isNaN(qty)) {
+      Alert.alert('Validation Error', 'Please enter valid numerical values for Buying Price and Quantity.');
       return;
     }
 
@@ -67,7 +67,11 @@ export const AddEditProductModal = ({ route, navigation }: any) => {
       });
     }
 
-    navigation.goBack();
+    Alert.alert(
+      isEditing ? 'Product Updated! 🎉' : 'Product Added! 🎉',
+      `${name} has been successfully ${isEditing ? 'updated' : 'added to inventory'}.`,
+      [{ text: 'OK', onPress: () => navigation.goBack() }]
+    );
   };
 
   return (
@@ -78,9 +82,7 @@ export const AddEditProductModal = ({ route, navigation }: any) => {
           <Ionicons name="close-outline" size={26} color={COLORS.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{isEditing ? 'Edit Product' : 'Add New Product'}</Text>
-        <TouchableOpacity onPress={handleSave} activeOpacity={0.7}>
-          <Text style={styles.saveHeaderBtn}>Save</Text>
-        </TouchableOpacity>
+        <View style={{ width: 26 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -137,7 +139,7 @@ export const AddEditProductModal = ({ route, navigation }: any) => {
           </View>
 
           <View style={[styles.inputGroup, { flex: 1 }]}>
-            <Text style={styles.label}>Selling Price ({settings.currency})</Text>
+            <Text style={styles.label}>Default Sell Price (Optional)</Text>
             <TextInput
               style={styles.input}
               value={sellPrice}
@@ -161,6 +163,27 @@ export const AddEditProductModal = ({ route, navigation }: any) => {
             placeholderTextColor={COLORS.textMuted}
           />
         </View>
+
+        {/* Primary Save Button inside form body */}
+        <TouchableOpacity
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: COLORS.green,
+            borderRadius: 14,
+            height: 52,
+            gap: 8,
+            marginTop: 12,
+          }}
+          onPress={handleSave}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="checkmark-circle-outline" size={22} color={COLORS.card} />
+          <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.card }}>
+            {isEditing ? 'Update Product' : 'Save Product'}
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );

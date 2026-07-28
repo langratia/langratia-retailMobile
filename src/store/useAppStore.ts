@@ -178,10 +178,15 @@ export const useAppStore = create<AppState>()(
 
       addTransaction: (txData) => {
         const now = new Date();
+        const formattedDate = now.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+        });
         const newTx: Transaction = {
           ...txData,
           id: `tx-${Date.now()}`,
-          date: 'Today',
+          date: formattedDate,
           time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         };
         set((state) => ({ transactions: [newTx, ...state.transactions] }));

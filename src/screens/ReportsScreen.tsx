@@ -21,7 +21,7 @@ export const ReportsScreen = () => {
     .reduce((acc, t) => acc + t.amount, 0);
 
   const netProfit = totalIncome - totalExpenses;
-  const cashBalance = 12450.0;
+  const cashBalance = totalIncome - totalExpenses;
   const totalBusinessValue = cashBalance + totalStockValue;
 
   return (

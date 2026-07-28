@@ -1,5 +1,5 @@
-import React from 'react';
-import { TouchableOpacity, Text, View, StyleSheet } from 'react-native';
+import React, { useRef } from 'react';
+import { Animated, TouchableWithoutFeedback, Text, View, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SHADOWS } from '../theme/theme';
 
@@ -18,17 +18,42 @@ export const QuickActionButton: React.FC<QuickActionButtonProps> = ({
   bgColor,
   onPress,
 }) => {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 0.94,
+      useNativeDriver: true,
+      friction: 8,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+      friction: 5,
+    }).start();
+  };
+
   return (
-    <TouchableOpacity
-      style={[styles.container, { backgroundColor: bgColor }]}
+    <TouchableWithoutFeedback
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
       onPress={onPress}
-      activeOpacity={0.7}
     >
-      <View style={styles.iconCircle}>
-        <Ionicons name={iconName} size={24} color={iconColor} />
-      </View>
-      <Text style={styles.title}>{title}</Text>
-    </TouchableOpacity>
+      <Animated.View
+        style={[
+          styles.container,
+          { backgroundColor: bgColor, transform: [{ scale: scaleAnim }] },
+        ]}
+      >
+        <View style={styles.iconCircle}>
+          <Ionicons name={iconName} size={24} color={iconColor} />
+        </View>
+        <Text style={styles.title}>{title}</Text>
+      </Animated.View>
+    </TouchableWithoutFeedback>
   );
 };
 

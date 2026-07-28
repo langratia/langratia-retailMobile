@@ -1,9 +1,24 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  LayoutAnimation,
+  Platform,
+  UIManager,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Product } from '../types';
 import { COLORS, SHADOWS } from '../theme/theme';
 import { Badge } from './Badge';
+
+if (
+  Platform.OS === 'android' &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 interface ProductItemCardProps {
   product: Product;
@@ -16,155 +31,192 @@ interface ProductItemCardProps {
 
 export const ProductItemCard: React.FC<ProductItemCardProps> = ({
   product,
-  currency = '$',
+  currency = 'UGX',
   onAddStock,
   onRemoveStock,
   onEdit,
-  onPressDetails,
 }) => {
+  const [expanded, setExpanded] = useState(false);
+
+  const toggleExpand = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpanded(!expanded);
+  };
+
   const totalValue = product.quantity * product.buyPrice;
 
   return (
-    <TouchableOpacity
-      style={styles.card}
-      onPress={onPressDetails}
-      activeOpacity={onPressDetails ? 0.8 : 1}
-    >
-      <View style={styles.topSection}>
-        {/* Product Icon Box */}
-        <View style={styles.imageBox}>
-          <Ionicons
-            name={product.category === 'Smartphones' ? 'phone-portrait-outline' : 'cube-outline'}
-            size={28}
-            color={COLORS.blue}
-          />
-        </View>
-
-        {/* Info & Badge */}
-        <View style={styles.infoBox}>
+    <View style={styles.card}>
+      {/* Compact Main Row */}
+      <TouchableOpacity
+        style={styles.mainRow}
+        onPress={toggleExpand}
+        activeOpacity={0.7}
+      >
+        <View style={styles.nameSection}>
           <Text style={styles.name}>{product.name}</Text>
           <Text style={styles.category}>{product.category}</Text>
         </View>
 
-        <View style={styles.badgeBox}>
-          <Badge quantity={product.quantity} />
-        </View>
-      </View>
-
-      {/* 3-Column Price Row */}
-      <View style={styles.metricsRow}>
-        <View style={styles.metricCol}>
-          <Text style={styles.metricLabel}>Buy Price</Text>
-          <Text style={styles.metricValue}>{currency}{product.buyPrice.toFixed(2)}</Text>
-        </View>
-
-        <View style={styles.metricCol}>
-          <Text style={styles.metricLabel}>Sell Price</Text>
-          <Text style={styles.metricValue}>{currency}{product.sellPrice.toFixed(2)}</Text>
-        </View>
-
-        <View style={styles.metricCol}>
-          <Text style={styles.metricLabel}>Total Value</Text>
-          <Text style={[styles.metricValue, { color: COLORS.green, fontWeight: '700' }]}>
-            {currency}{totalValue.toFixed(2)}
+        <View style={styles.rightCompactSection}>
+          <Text style={styles.priceTag}>
+            {currency} {product.sellPrice.toLocaleString()}
           </Text>
+          <Badge quantity={product.quantity} />
+          <Ionicons
+            name={expanded ? 'chevron-up' : 'chevron-down'}
+            size={18}
+            color={COLORS.textMuted}
+            style={{ marginLeft: 6 }}
+          />
         </View>
-      </View>
+      </TouchableOpacity>
 
-      {/* Bottom Actions Row */}
-      <View style={styles.actionsRow}>
-        <TouchableOpacity style={styles.actionBtn} onPress={onAddStock} activeOpacity={0.7}>
-          <Ionicons name="add-circle-outline" size={18} color={COLORS.green} />
-          <Text style={[styles.actionText, { color: COLORS.textPrimary }]}>Add Stock</Text>
-        </TouchableOpacity>
+      {/* Slide-Down Expanded Details */}
+      {expanded && (
+        <View style={styles.expandedContent}>
+          <View style={styles.divider} />
 
-        <TouchableOpacity style={styles.actionBtn} onPress={onRemoveStock} activeOpacity={0.7}>
-          <Ionicons name="remove-circle-outline" size={18} color={COLORS.red} />
-          <Text style={[styles.actionText, { color: COLORS.textPrimary }]}>Remove Stock</Text>
-        </TouchableOpacity>
+          {/* 3-Column Metrics */}
+          <View style={styles.metricsRow}>
+            <View style={styles.metricCol}>
+              <Text style={styles.metricLabel}>Buy Price</Text>
+              <Text style={styles.metricValue}>
+                {currency} {product.buyPrice.toLocaleString()}
+              </Text>
+            </View>
 
-        <TouchableOpacity style={styles.actionBtn} onPress={onEdit} activeOpacity={0.7}>
-          <Ionicons name="pencil-outline" size={16} color={COLORS.textSecondary} />
-          <Text style={[styles.actionText, { color: COLORS.textSecondary }]}>Edit</Text>
-        </TouchableOpacity>
-      </View>
-    </TouchableOpacity>
+            <View style={styles.metricCol}>
+              <Text style={styles.metricLabel}>Sell Price</Text>
+              <Text style={styles.metricValue}>
+                {currency} {product.sellPrice.toLocaleString()}
+              </Text>
+            </View>
+
+            <View style={styles.metricCol}>
+              <Text style={styles.metricLabel}>Total Value</Text>
+              <Text style={[styles.metricValue, { color: COLORS.green, fontWeight: '700' }]}>
+                {currency} {totalValue.toLocaleString()}
+              </Text>
+            </View>
+          </View>
+
+          {/* Action Buttons Row */}
+          <View style={styles.actionsRow}>
+            <TouchableOpacity
+              style={[styles.actionBtn, { backgroundColor: COLORS.greenBg }]}
+              onPress={onAddStock}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="add-circle" size={16} color={COLORS.green} />
+              <Text style={[styles.actionText, { color: COLORS.green }]}>Add Stock</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionBtn, { backgroundColor: COLORS.redBg }]}
+              onPress={onRemoveStock}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="remove-circle" size={16} color={COLORS.red} />
+              <Text style={[styles.actionText, { color: COLORS.red }]}>Remove Stock</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionBtn, { backgroundColor: COLORS.inputBg }]}
+              onPress={onEdit}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="create-outline" size={16} color={COLORS.textSecondary} />
+              <Text style={[styles.actionText, { color: COLORS.textSecondary }]}>Edit</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   card: {
     backgroundColor: COLORS.card,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 10,
     ...SHADOWS.small,
   },
-  topSection: {
+  mainRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 14,
+    justifyContent: 'space-between',
   },
-  imageBox: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: COLORS.blueBg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  infoBox: {
+  nameSection: {
     flex: 1,
+    paddingRight: 8,
   },
   name: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
     color: COLORS.textPrimary,
-    marginBottom: 2,
   },
   category: {
-    fontSize: 13,
+    fontSize: 12,
     color: COLORS.textSecondary,
+    marginTop: 2,
   },
-  badgeBox: {
-    alignItems: 'flex-end',
+  rightCompactSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  priceTag: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.green,
+  },
+  expandedContent: {
+    marginTop: 10,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: COLORS.divider,
+    marginBottom: 10,
   },
   metricsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 10,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: COLORS.divider,
     marginBottom: 12,
   },
   metricCol: {
     flex: 1,
   },
   metricLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: COLORS.textSecondary,
     marginBottom: 2,
   },
   metricValue: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: COLORS.textPrimary,
   },
   actionsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    gap: 8,
   },
   actionBtn: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    borderRadius: 10,
     gap: 4,
-    paddingVertical: 4,
   },
   actionText: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
   },
 });
+

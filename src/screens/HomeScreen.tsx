@@ -31,9 +31,11 @@ export const HomeScreen = ({ navigation }: any) => {
     .filter((tx) => tx.type === 'expense')
     .reduce((acc, tx) => acc + tx.amount, 0);
 
-  const cashBalance = 12450.0; // Styled as per mockup or totalIncome - totalExpense
-  const todaysProfit = 1230.0;
-  const todaysSales = 540.0;
+  const cashBalance = totalIncome - totalExpense;
+  const todaysSales = transactions
+    .filter((tx) => tx.type === 'income' && (tx.date === 'Today' || tx.date.includes(new Date().getDate().toString())))
+    .reduce((acc, tx) => acc + tx.amount, 0);
+  const todaysProfit = todaysSales * 0.25; // estimated margin
 
   const lowStockItems = products.filter(
     (p) => p.quantity <= settings.lowStockThreshold
