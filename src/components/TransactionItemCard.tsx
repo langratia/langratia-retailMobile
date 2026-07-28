@@ -15,11 +15,12 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
   currency = 'UGX',
   onPress,
 }) => {
+  const isCredit = transaction.isCredit;
   const isIncome = transaction.type === 'income';
-  const iconName = isIncome ? 'download-outline' : 'upload-outline';
-  const iconBg = isIncome ? COLORS.greenBg : COLORS.redBg;
-  const iconColor = isIncome ? COLORS.green : COLORS.red;
-  const amountColor = isIncome ? COLORS.green : COLORS.red;
+  const iconName = isCredit ? 'document-text-outline' : isIncome ? 'download-outline' : 'upload-outline';
+  const iconBg = isCredit ? COLORS.amberBg : isIncome ? COLORS.greenBg : COLORS.redBg;
+  const iconColor = isCredit ? COLORS.amber : isIncome ? COLORS.green : COLORS.red;
+  const amountColor = isCredit ? COLORS.amber : isIncome ? COLORS.green : COLORS.red;
   const amountSign = isIncome ? '+' : '-';
 
   return (
@@ -41,7 +42,7 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
           <View style={[styles.typeBadge, { backgroundColor: iconBg }]}>
             <View style={[styles.bullet, { backgroundColor: iconColor }]} />
             <Text style={[styles.typeText, { color: iconColor }]}>
-              {isIncome ? 'Income' : 'Expense'}
+              {isCredit ? 'Credit (Debt)' : isIncome ? 'Income' : 'Expense'}
             </Text>
           </View>
         </View>

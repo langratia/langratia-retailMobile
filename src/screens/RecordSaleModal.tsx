@@ -25,6 +25,9 @@ export const RecordSaleModal = ({ navigation }: any) => {
   const [customPrice, setCustomPrice] = useState<string>(
     selectedProduct ? selectedProduct.sellPrice.toString() : ''
   );
+  const [isCredit, setIsCredit] = useState<boolean>(false);
+  const [customerName, setCustomerName] = useState<string>('');
+  const [customerPhone, setCustomerPhone] = useState<string>('');
 
   useEffect(() => {
     if (selectedProduct) {
@@ -52,11 +55,25 @@ export const RecordSaleModal = ({ navigation }: any) => {
       return;
     }
 
-    const success = recordSale(selectedProduct.id, quantitySold, priceNum);
+    if (isCredit && !customerName.trim()) {
+      Alert.alert('Customer Info Required', 'Please enter the customer name for credit sales.');
+      return;
+    }
+
+    const success = recordSale(
+      selectedProduct.id,
+      quantitySold,
+      priceNum,
+      isCredit,
+      customerName,
+      customerPhone
+    );
     if (success) {
       Alert.alert(
-        'Sale Recorded! 🎉',
-        `Sold ${quantitySold} unit(s) of ${selectedProduct.name}. Stock updated and cashbook credited with ${settings.currency} ${(priceNum * quantitySold).toFixed(2)}.`,
+        isCredit ? 'Credit Sale Recorded! 📝' : 'Sale Recorded! 🎉',
+        isCredit
+          ? `Sold ${quantitySold} unit(s) to ${customerName} on Credit. Outstanding: ${settings.currency} ${(priceNum * quantitySold).toLocaleString()}.`
+          : `Sold ${quantitySold} unit(s) of ${selectedProduct.name}. Stock updated and cashbook credited with ${settings.currency} ${(priceNum * quantitySold).toLocaleString()}.`,
         [{ text: 'OK', onPress: () => navigation.goBack() }]
       );
     }
@@ -150,6 +167,91 @@ export const RecordSaleModal = ({ navigation }: any) => {
                     placeholder="Enter selling price"
                   />
                 </View>
+
+                <View style={{ marginBottom: 16 }}>
+                  <Text style={styles.label}>Payment Type</Text>
+                  <View style={{ flexDirection: 'row', gap: 10 }}>
+                    <TouchableOpacity
+                      style={{
+                        flex: 1,
+                        paddingVertical: 10,
+                        borderRadius: 10,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: !isCredit ? COLORS.greenBg : COLORS.inputBg,
+                        borderWidth: 1,
+                        borderColor: !isCredit ? COLORS.green : COLORS.divider,
+                      }}
+                      onPress={() => setIsCredit(false)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={{ fontWeight: '700', color: !isCredit ? COLORS.green : COLORS.textSecondary }}>
+                        💵 Cash Sale
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={{
+                        flex: 1,
+                        paddingVertical: 10,
+                        borderRadius: 10,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: isCredit ? COLORS.amberBg : COLORS.inputBg,
+                        borderWidth: 1,
+                        borderColor: isCredit ? COLORS.amber : COLORS.divider,
+                      }}
+                      onPress={() => setIsCredit(true)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={{ fontWeight: '700', color: isCredit ? COLORS.amber : COLORS.textSecondary }}>
+                        📝 Credit Sale (Amabanja)
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {isCredit && (
+                  <View style={{ marginBottom: 16, gap: 10 }}>
+                    <View>
+                      <Text style={styles.label}>Customer Name *</Text>
+                      <TextInput
+                        style={{
+                          backgroundColor: COLORS.inputBg,
+                          borderRadius: 10,
+                          paddingHorizontal: 14,
+                          height: 44,
+                          fontSize: 14,
+                          color: COLORS.textPrimary,
+                          borderWidth: 1,
+                          borderColor: COLORS.divider,
+                        }}
+                        value={customerName}
+                        onChangeText={setCustomerName}
+                        placeholder="e.g. John Kampala"
+                      />
+                    </View>
+                    <View>
+                      <Text style={styles.label}>Customer Phone Number (Optional)</Text>
+                      <TextInput
+                        style={{
+                          backgroundColor: COLORS.inputBg,
+                          borderRadius: 10,
+                          paddingHorizontal: 14,
+                          height: 44,
+                          fontSize: 14,
+                          color: COLORS.textPrimary,
+                          borderWidth: 1,
+                          borderColor: COLORS.divider,
+                        }}
+                        value={customerPhone}
+                        onChangeText={setCustomerPhone}
+                        keyboardType="phone-pad"
+                        placeholder="e.g. 0770000000"
+                      />
+                    </View>
+                  </View>
+                )}
 
                 <Text style={styles.label}>Quantity Sold</Text>
                 <View style={styles.qtyRow}>

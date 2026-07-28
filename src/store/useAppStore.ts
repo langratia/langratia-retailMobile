@@ -17,7 +17,14 @@ interface AppState {
   addTransaction: (transaction: Omit<Transaction, 'id' | 'date' | 'time'>) => void;
   deleteTransaction: (id: string) => void;
   
-  recordSale: (productId: string, quantity: number, customSellPrice?: number) => boolean;
+  recordSale: (
+    productId: string,
+    quantity: number,
+    customSellPrice?: number,
+    isCredit?: boolean,
+    customerName?: string,
+    customerPhone?: string
+  ) => boolean;
   
   updateSettings: (newSettings: Partial<BusinessSettings>) => void;
   login: () => void;
@@ -193,12 +200,24 @@ export const useAppStore = create<AppState>()(
       },
 
       deleteTransaction: (id) => {
+        const targetTx = get().transactions.find((tx) => tx.id === id);
+        if (targetTx && targetTx.type === 'income' && targetTx.productId) {
+          // Revert stock automatically
+          get().adjustStock(targetTx.productId, 1);
+        }
         set((state) => ({
           transactions: state.transactions.filter((tx) => tx.id !== id),
         }));
       },
 
-      recordSale: (productId, quantity, customSellPrice) => {
+      recordSale: (
+        productId,
+        quantity,
+        customSellPrice,
+        isCredit,
+        customerName,
+        customerPhone
+      ) => {
         const product = get().products.find((p) => p.id === productId);
         if (!product || product.quantity < quantity) {
           return false;
@@ -210,13 +229,20 @@ export const useAppStore = create<AppState>()(
         // 1. Decrement stock
         get().adjustStock(productId, -quantity);
 
-        // 2. Add cashbook income transaction
+        // 2. Add cashbook transaction
+        const desc = isCredit
+          ? `${product.name} Sold on Credit (${quantity} Unit${quantity > 1 ? 's' : ''}) to ${customerName || 'Customer'}`
+          : `${product.name} Sold (${quantity} Unit${quantity > 1 ? 's' : ''})`;
+
         get().addTransaction({
           type: 'income',
           amount: saleAmount,
-          description: `${product.name} Sold (${quantity} Unit${quantity > 1 ? 's' : ''})`,
-          category: 'Sales',
+          description: desc,
+          category: isCredit ? 'Credit Sales' : 'Sales',
           productId: product.id,
+          isCredit,
+          customerName,
+          customerPhone,
         });
 
         return true;

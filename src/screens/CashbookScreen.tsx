@@ -25,12 +25,13 @@ export const CashbookScreen = ({ navigation }: any) => {
     .filter((tx) => tx.type === 'expense')
     .reduce((acc, tx) => acc + tx.amount, 0);
 
-  const cashBalance = 12450.0; // Styled as per mockup or totalIncome - totalExpenses
+  const cashBalance = totalIncome - totalExpenses;
 
   const filteredTransactions = transactions.filter((tx) => {
-    if (selectedFilter === 'Today') return tx.date === 'Today';
-    if (selectedFilter === 'This Week') return tx.date === 'Today' || tx.date === 'Yesterday';
-    if (selectedFilter === 'This Month') return true;
+    if (selectedFilter === 'Credit Sales') return tx.isCredit || tx.category === 'Credit Sales';
+    if (selectedFilter === 'Income') return tx.type === 'income';
+    if (selectedFilter === 'Expense') return tx.type === 'expense';
+    if (selectedFilter === 'Today') return tx.date === 'Today' || tx.date.includes(new Date().getDate().toString());
     return true;
   });
 
@@ -87,7 +88,7 @@ export const CashbookScreen = ({ navigation }: any) => {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.filterPillsRow}
         >
-          {['All Transactions', 'Today', 'This Week', 'This Month'].map((filter) => {
+          {['All Transactions', 'Income', 'Expense', 'Credit Sales', 'Today'].map((filter) => {
             const isActive = selectedFilter === filter;
             return (
               <TouchableOpacity

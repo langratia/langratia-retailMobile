@@ -21,6 +21,10 @@ export interface Transaction {
   date: string; // ISO String or readable format
   time: string;
   productId?: string;
+  isCredit?: boolean;
+  customerName?: string;
+  customerPhone?: string;
+  paidAmount?: number;
 }
 
 export interface BusinessSettings {
