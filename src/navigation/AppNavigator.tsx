@@ -19,6 +19,7 @@ import { AddTransactionModal } from '../screens/AddTransactionModal';
 import { RecordSaleModal } from '../screens/RecordSaleModal';
 import { ProductDetailsModal } from '../screens/ProductDetailsModal';
 import { MenuModal } from '../screens/MenuModal';
+import { StatementModal } from '../screens/StatementModal';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -78,6 +79,7 @@ export function AppNavigator() {
         <>
           <Stack.Screen name="MainTabs" component={BottomTabNavigator} />
           <Stack.Group screenOptions={{ presentation: 'modal' }}>
+            <Stack.Screen name="StatementModal" component={StatementModal} />
             <Stack.Screen name="MenuModal" component={MenuModal} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
             <Stack.Screen name="AddEditProduct" component={AddEditProductModal} />

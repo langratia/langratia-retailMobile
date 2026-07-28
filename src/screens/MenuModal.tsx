@@ -83,6 +83,25 @@ export const MenuModal = ({ navigation }: any) => {
             <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
           </TouchableOpacity>
 
+          {/* Financial Statement Table */}
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => {
+              navigation.goBack();
+              navigation.navigate('StatementModal');
+            }}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.iconBox, { backgroundColor: COLORS.greenBg }]}>
+              <Ionicons name="document-text-outline" size={22} color={COLORS.green} />
+            </View>
+            <View style={styles.menuTextContent}>
+              <Text style={styles.menuTitle}>Financial Statement Table</Text>
+              <Text style={styles.menuSub}>Tabular ledger of all transactions</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
+          </TouchableOpacity>
+
           {/* Export & Backup */}
           <TouchableOpacity
             style={styles.menuItem}

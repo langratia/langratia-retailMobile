@@ -41,9 +41,13 @@ export const CashbookScreen = ({ navigation }: any) => {
         title="Cash Book"
         showNotification={false}
         rightAction={
-          <TouchableOpacity style={styles.exportBtn} activeOpacity={0.7}>
-            <Ionicons name="download-outline" size={16} color={COLORS.green} />
-            <Text style={styles.exportText}>Export</Text>
+          <TouchableOpacity
+            style={styles.exportBtn}
+            activeOpacity={0.7}
+            onPress={() => navigation.navigate('StatementModal')}
+          >
+            <Ionicons name="document-text-outline" size={16} color={COLORS.green} />
+            <Text style={styles.exportText}>Statement</Text>
           </TouchableOpacity>
         }
       />
