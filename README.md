@@ -148,12 +148,18 @@ total expenses, gross profit, net profit, and estimated business value.
 
 ---
 
+
 ## 🎨 Design & Color Palette
 
 The app follows a **Modern Fintech + Material 3** design philosophy, relying
 on a neutral background with soft accent colors to highlight important
 information. This makes the application feel professional, trustworthy,
 and easy to scan.
+
+### Typography
+- **Primary Font:** Inter or Roboto (Clean, highly legible sans-serif)
+- **Headings:** Semi-bold or Bold for hierarchy and clear sectioning
+- **Data/Numbers:** Monospaced or tabular numbers for easy reading of financial figures
 
 ### Color Palette
 
@@ -176,6 +182,16 @@ and easy to scan.
 | Disabled Text | `#9CA3AF` |
 | Divider | `#E5E7EB` |
 
-### Sample Screen
+### Screen Breakdowns
 
-[Insert sample UI image here]
+#### 1. Home (Dashboard)
+The dashboard provides an immediate overview of the business's financial position at a glance. It utilizes color-coded cards to draw attention to critical metrics (e.g., Cash Balance, Stock Value, and Profit/Loss) and offers quick access to the most frequent actions.
+![Home Dashboard Screen](assets/home_dashboard.png)
+
+#### 2. Inventory
+The Inventory screen keeps track of all products with clear visual hierarchy. Products are displayed in clean list items with their respective quantities, buying/selling prices, and subtle color indicators for stock health.
+![Inventory Screen](assets/inventory_screen.png)
+
+#### 3. Cashbook
+The Cashbook acts as a transparent ledger of all business transactions. Incomes and expenses are distinctively marked with green and red indicators respectively, making it simple to track the flow of money.
+![Cashbook Screen](assets/cashbook_screen.png)
