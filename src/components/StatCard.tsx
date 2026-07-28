@@ -26,7 +26,11 @@ export const StatCard: React.FC<StatCardProps> = ({
         <Ionicons name={iconName} size={22} color={iconColor} />
       </View>
       <Text style={styles.title}>{title}</Text>
-      <Text style={[styles.value, { color: iconColor === COLORS.red ? COLORS.red : COLORS.textPrimary }]}>
+      <Text 
+        style={[styles.value, { color: iconColor === COLORS.red ? COLORS.red : COLORS.textPrimary }]}
+        numberOfLines={1}
+        adjustsFontSizeToFit={true}
+      >
         {value}
       </Text>
       {trendText ? (

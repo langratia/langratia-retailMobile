@@ -1,4 +1,5 @@
 import React from 'react';
+import { View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,14 +21,16 @@ import { RecordSaleModal } from '../screens/RecordSaleModal';
 import { ProductDetailsModal } from '../screens/ProductDetailsModal';
 import { MenuModal } from '../screens/MenuModal';
 import { StatementModal } from '../screens/StatementModal';
+import { GlobalSpeedDial } from '../components/GlobalSpeedDial';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
 function BottomTabNavigator() {
   return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
+    <View style={{ flex: 1 }}>
+      <Tab.Navigator
+        screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: COLORS.green,
         tabBarInactiveTintColor: COLORS.textMuted,
@@ -65,6 +68,8 @@ function BottomTabNavigator() {
       <Tab.Screen name="Cashbook" component={CashbookScreen} options={{ title: 'Cashbook' }} />
       <Tab.Screen name="Reports" component={ReportsScreen} options={{ title: 'Reports' }} />
     </Tab.Navigator>
+      <GlobalSpeedDial />
+    </View>
   );
 }
 

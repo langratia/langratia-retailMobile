@@ -153,15 +153,6 @@ export const CashbookScreen = ({ navigation }: any) => {
           )}
         </View>
       </ScrollView>
-
-      {/* Green Floating Action Button (FAB) */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => navigation.navigate('AddTransaction')}
-        activeOpacity={0.85}
-      >
-        <Ionicons name="add" size={30} color={COLORS.card} />
-      </TouchableOpacity>
     </View>
   );
 };
@@ -274,17 +265,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.textSecondary,
     marginTop: 8,
-  },
-  fab: {
-    position: 'absolute',
-    bottom: 24,
-    right: 24,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: COLORS.green,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...SHADOWS.fab,
   },
 });

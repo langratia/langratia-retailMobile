@@ -142,41 +142,48 @@ export const HomeScreen = ({ navigation }: any) => {
           <Text style={styles.sectionTitle}>Quick Actions</Text>
         </View>
 
-        <View style={styles.quickActionsRow}>
-          <QuickActionButton
-            title="Add Stock"
-            iconName="add-circle-outline"
-            iconColor={COLORS.green}
-            bgColor={COLORS.greenBg}
-            onPress={() => navigation.navigate('AddEditProduct')}
-          />
-          <QuickActionButton
-            title="Record Sale"
-            iconName="cart-outline"
-            iconColor={COLORS.blue}
-            bgColor={COLORS.blueBg}
-            onPress={() => navigation.navigate('RecordSale')}
-          />
-          <QuickActionButton
-            title="Add Expense"
-            iconName="receipt-outline"
-            iconColor={COLORS.amber}
-            bgColor={COLORS.amberBg}
-            onPress={() => navigation.navigate('AddTransaction', { defaultType: 'expense' })}
-          />
-          <QuickActionButton
-            title="View Reports"
-            iconName="pie-chart-outline"
-            iconColor={COLORS.purple}
-            bgColor={COLORS.purpleBg}
-            onPress={() => navigation.navigate('Reports')}
-          />
+        <View style={styles.quickActionsContainer}>
+          <View style={styles.gridRow}>
+            <QuickActionButton
+              title="Add Stock"
+              iconName="add-circle-outline"
+              iconColor={COLORS.green}
+              bgColor={COLORS.greenBg}
+              onPress={() => navigation.navigate('AddEditProduct')}
+            />
+            <QuickActionButton
+              title="Record Sale"
+              iconName="cart-outline"
+              iconColor={COLORS.blue}
+              bgColor={COLORS.blueBg}
+              onPress={() => navigation.navigate('RecordSale')}
+            />
+          </View>
+          <View style={styles.gridRow}>
+            <QuickActionButton
+              title="Add Expense"
+              iconName="receipt-outline"
+              iconColor={COLORS.amber}
+              bgColor={COLORS.amberBg}
+              onPress={() => navigation.navigate('AddTransaction', { defaultType: 'expense' })}
+            />
+            <QuickActionButton
+              title="View Reports"
+              iconName="pie-chart-outline"
+              iconColor={COLORS.purple}
+              bgColor={COLORS.purpleBg}
+              onPress={() => navigation.navigate('Reports')}
+            />
+          </View>
         </View>
 
         {/* Low Stock Alerts */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Low Stock Alerts</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Inventory', { filterLowStock: true })}>
+          <TouchableOpacity 
+            onPress={() => navigation.navigate('Inventory', { filterLowStock: true })}
+            style={styles.viewAllBtn}
+          >
             <Text style={styles.viewAllText}>
               View All ({lowStockItems.length}) <Ionicons name="chevron-forward" size={14} color={COLORS.green} />
             </Text>
@@ -190,10 +197,10 @@ export const HomeScreen = ({ navigation }: any) => {
               <Text style={styles.emptyText}>All inventory levels are healthy!</Text>
             </View>
           ) : (
-            lowStockItems.map((item) => (
+            lowStockItems.map((item, index) => (
               <TouchableOpacity
                 key={item.id}
-                style={styles.alertRow}
+                style={[styles.alertRow, index === lowStockItems.length - 1 && { borderBottomWidth: 0 }]}
                 onPress={() => navigation.navigate('Inventory', { filterLowStock: true })}
                 activeOpacity={0.7}
               >
@@ -237,7 +244,7 @@ export const HomeScreen = ({ navigation }: any) => {
 
                 return (
                   <View key={day} style={styles.barCol}>
-                    <Text style={styles.barValText}>{val > 0 ? `${(val / 1000).toFixed(0)}k` : '0'}</Text>
+                    <Text style={styles.barValText}>{val > 0 ? (val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val) : '0'}</Text>
                     <View style={styles.barTrack}>
                       <View
                         style={[
@@ -260,7 +267,10 @@ export const HomeScreen = ({ navigation }: any) => {
         {/* Recent Transactions List on Home */}
         <View style={[styles.sectionHeader, { marginTop: 20 }]}>
           <Text style={styles.sectionTitle}>Recent Activity</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Cashbook')}>
+          <TouchableOpacity 
+            onPress={() => navigation.navigate('Cashbook')}
+            style={styles.viewAllBtn}
+          >
             <Text style={styles.viewAllText}>
               View Cashbook <Ionicons name="chevron-forward" size={14} color={COLORS.green} />
             </Text>
@@ -271,10 +281,10 @@ export const HomeScreen = ({ navigation }: any) => {
           {recentTransactions.length === 0 ? (
             <Text style={styles.emptyText}>No recent transactions logged yet.</Text>
           ) : (
-            recentTransactions.map((tx) => (
+            recentTransactions.map((tx, index) => (
               <TouchableOpacity
                 key={tx.id}
-                style={styles.alertRow}
+                style={[styles.alertRow, index === recentTransactions.length - 1 && { borderBottomWidth: 0 }]}
                 onPress={() => navigation.navigate('Cashbook')}
                 activeOpacity={0.7}
               >
@@ -317,6 +327,8 @@ export const HomeScreen = ({ navigation }: any) => {
                 </View>
 
                 <Text
+                  numberOfLines={1}
+                  adjustsFontSizeToFit={true}
                   style={{
                     fontSize: 14,
                     fontWeight: '700',
@@ -325,6 +337,7 @@ export const HomeScreen = ({ navigation }: any) => {
                       : tx.type === 'income'
                       ? COLORS.green
                       : COLORS.red,
+                    maxWidth: 100,
                   }}
                 >
                   {tx.type === 'income' ? '+' : '-'}{settings.currency} {tx.amount.toLocaleString()}
@@ -385,10 +398,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.green,
   },
-  quickActionsRow: {
-    flexDirection: 'row',
-    gap: 10,
+  quickActionsContainer: {
+    gap: 12,
     marginBottom: 24,
+  },
+  viewAllBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginRight: -12, // Offset padding to align visually
   },
   cardContainer: {
     backgroundColor: COLORS.card,
@@ -405,7 +422,7 @@ const styles = StyleSheet.create({
   alertRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: 14,
     borderBottomWidth: 1,
     borderColor: COLORS.divider,
   },

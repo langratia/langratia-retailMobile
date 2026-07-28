@@ -54,16 +54,6 @@ export const InventoryScreen = ({ route, navigation }: any) => {
       <Header
         title="Inventory"
         showNotification={false}
-        rightAction={
-          <TouchableOpacity
-            style={styles.headerAddBtn}
-            onPress={() => navigation.navigate('AddEditProduct')}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="add" size={18} color={COLORS.card} />
-            <Text style={styles.headerAddBtnText}>Add Product</Text>
-          </TouchableOpacity>
-        }
       />
 
       <ScrollView
@@ -209,14 +199,6 @@ export const InventoryScreen = ({ route, navigation }: any) => {
         )}
       </ScrollView>
 
-      {/* Green Floating Action Button (FAB) */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => navigation.navigate('AddEditProduct')}
-        activeOpacity={0.85}
-      >
-        <Ionicons name="add" size={30} color={COLORS.card} />
-      </TouchableOpacity>
     </View>
   );
 };
@@ -235,20 +217,6 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginTop: -8,
     marginBottom: 16,
-  },
-  headerAddBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.green,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 10,
-    gap: 4,
-  },
-  headerAddBtnText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: COLORS.card,
   },
   searchRow: {
     flexDirection: 'row',
@@ -323,17 +291,5 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     textAlign: 'center',
     marginTop: 4,
-  },
-  fab: {
-    position: 'absolute',
-    bottom: 24,
-    right: 24,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: COLORS.green,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...SHADOWS.fab,
   },
 });
