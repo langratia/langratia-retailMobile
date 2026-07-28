@@ -35,6 +35,7 @@ export const ProductItemCard: React.FC<ProductItemCardProps> = ({
   onAddStock,
   onRemoveStock,
   onEdit,
+  onPressDetails,
 }) => {
   const [expanded, setExpanded] = useState(false);
 
@@ -59,7 +60,11 @@ export const ProductItemCard: React.FC<ProductItemCardProps> = ({
         </View>
 
         <View style={styles.rightCompactSection}>
-          <Text style={styles.priceTag}>
+          <Text 
+            style={styles.priceTag}
+            numberOfLines={1}
+            adjustsFontSizeToFit={true}
+          >
             {currency} {product.sellPrice.toLocaleString()}
           </Text>
           <Badge quantity={product.quantity} />
@@ -81,21 +86,33 @@ export const ProductItemCard: React.FC<ProductItemCardProps> = ({
           <View style={styles.metricsRow}>
             <View style={styles.metricCol}>
               <Text style={styles.metricLabel}>Buy Price</Text>
-              <Text style={styles.metricValue}>
+              <Text 
+                style={styles.metricValue}
+                numberOfLines={1}
+                adjustsFontSizeToFit={true}
+              >
                 {currency} {product.buyPrice.toLocaleString()}
               </Text>
             </View>
 
             <View style={styles.metricCol}>
               <Text style={styles.metricLabel}>Sell Price</Text>
-              <Text style={styles.metricValue}>
+              <Text 
+                style={styles.metricValue}
+                numberOfLines={1}
+                adjustsFontSizeToFit={true}
+              >
                 {currency} {product.sellPrice.toLocaleString()}
               </Text>
             </View>
 
             <View style={styles.metricCol}>
               <Text style={styles.metricLabel}>Total Value</Text>
-              <Text style={[styles.metricValue, { color: COLORS.green, fontWeight: '700' }]}>
+              <Text 
+                style={[styles.metricValue, { color: COLORS.green, fontWeight: '700' }]}
+                numberOfLines={1}
+                adjustsFontSizeToFit={true}
+              >
                 {currency} {totalValue.toLocaleString()}
               </Text>
             </View>
@@ -108,8 +125,8 @@ export const ProductItemCard: React.FC<ProductItemCardProps> = ({
               onPress={onAddStock}
               activeOpacity={0.7}
             >
-              <Ionicons name="add-circle" size={16} color={COLORS.green} />
-              <Text style={[styles.actionText, { color: COLORS.green }]}>Add Stock</Text>
+              <Ionicons name="add-circle" size={14} color={COLORS.green} />
+              <Text style={[styles.actionText, { color: COLORS.green }]}>Stock</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -117,8 +134,8 @@ export const ProductItemCard: React.FC<ProductItemCardProps> = ({
               onPress={onRemoveStock}
               activeOpacity={0.7}
             >
-              <Ionicons name="remove-circle" size={16} color={COLORS.red} />
-              <Text style={[styles.actionText, { color: COLORS.red }]}>Remove Stock</Text>
+              <Ionicons name="remove-circle" size={14} color={COLORS.red} />
+              <Text style={[styles.actionText, { color: COLORS.red }]}>Remove</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -126,8 +143,17 @@ export const ProductItemCard: React.FC<ProductItemCardProps> = ({
               onPress={onEdit}
               activeOpacity={0.7}
             >
-              <Ionicons name="create-outline" size={16} color={COLORS.textSecondary} />
+              <Ionicons name="create-outline" size={14} color={COLORS.textSecondary} />
               <Text style={[styles.actionText, { color: COLORS.textSecondary }]}>Edit</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionBtn, { backgroundColor: COLORS.blueBg }]}
+              onPress={onPressDetails}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="information-circle-outline" size={14} color={COLORS.blue} />
+              <Text style={[styles.actionText, { color: COLORS.blue }]}>Details</Text>
             </TouchableOpacity>
           </View>
         </View>

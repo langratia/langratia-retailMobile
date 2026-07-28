@@ -20,6 +20,13 @@ export const InventoryScreen = ({ route, navigation }: any) => {
   const [categoryFilter, setCategoryFilter] = useState(
     route?.params?.filterLowStock ? 'Low Stock' : 'All'
   );
+  const [sortBy, setSortBy] = useState<'name' | 'quantity' | 'price'>('name');
+
+  const toggleSort = () => {
+    if (sortBy === 'name') setSortBy('quantity');
+    else if (sortBy === 'quantity') setSortBy('price');
+    else setSortBy('name');
+  };
 
   React.useEffect(() => {
     if (route?.params?.filterLowStock) {
@@ -47,6 +54,12 @@ export const InventoryScreen = ({ route, navigation }: any) => {
     }
 
     return matchesSearch && matchesCategory;
+  });
+
+  const sortedProducts = [...filteredProducts].sort((a, b) => {
+    if (sortBy === 'quantity') return b.quantity - a.quantity;
+    if (sortBy === 'price') return b.sellPrice - a.sellPrice;
+    return a.name.localeCompare(b.name);
   });
 
   return (
@@ -80,38 +93,49 @@ export const InventoryScreen = ({ route, navigation }: any) => {
             )}
           </View>
 
-          <TouchableOpacity style={styles.filterBtn} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.filterBtn} activeOpacity={0.7} onPress={toggleSort}>
             <Ionicons name="options-outline" size={20} color={COLORS.green} />
           </TouchableOpacity>
         </View>
 
         {/* 3 Metrics Cards Row */}
-        <View style={styles.metricsRow}>
-          <StatCard
-            title="Total Products"
-            value={totalProductsCount.toString()}
-            trendText="Active products"
-            iconName="cube-outline"
-            iconColor={COLORS.blue}
-            iconBgColor={COLORS.blueBg}
-          />
-          <StatCard
-            title="Total Units"
-            value={totalUnitsCount.toString()}
-            trendText="Units in stock"
-            iconName="grid-outline"
-            iconColor={COLORS.green}
-            iconBgColor={COLORS.greenBg}
-          />
-          <StatCard
-            title="Inventory Value"
-            value={`${settings.currency}${totalInventoryValue.toLocaleString('en-US', { minimumFractionDigits: 0 })}`}
-            trendText="Stock value (cost)"
-            iconName="logo-usd"
-            iconColor={COLORS.purple}
-            iconBgColor={COLORS.purpleBg}
-          />
-        </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.metricsRow}
+          style={{ marginBottom: 12 }}
+        >
+          <View style={{ width: 140 }}>
+            <StatCard
+              title="Total Products"
+              value={totalProductsCount.toString()}
+              trendText="Active products"
+              iconName="cube-outline"
+              iconColor={COLORS.blue}
+              iconBgColor={COLORS.blueBg}
+            />
+          </View>
+          <View style={{ width: 140 }}>
+            <StatCard
+              title="Total Units"
+              value={totalUnitsCount.toString()}
+              trendText="Units in stock"
+              iconName="grid-outline"
+              iconColor={COLORS.green}
+              iconBgColor={COLORS.greenBg}
+            />
+          </View>
+          <View style={{ width: 160 }}>
+            <StatCard
+              title="Inventory Value"
+              value={`${settings.currency}${totalInventoryValue.toLocaleString('en-US', { minimumFractionDigits: 0 })}`}
+              trendText="Stock value (cost)"
+              iconName="logo-usd"
+              iconColor={COLORS.purple}
+              iconBgColor={COLORS.purpleBg}
+            />
+          </View>
+        </ScrollView>
 
         {/* Category & Low Stock Filter Pills */}
         <ScrollView
@@ -169,23 +193,25 @@ export const InventoryScreen = ({ route, navigation }: any) => {
         {/* Products List Header */}
         <View style={styles.listHeaderRow}>
           <Text style={styles.listHeaderTitle}>
-            All Products ({filteredProducts.length})
+            All Products ({sortedProducts.length})
           </Text>
-          <View style={styles.sortDropdown}>
-            <Text style={styles.sortText}>Sort by: Name</Text>
-            <Ionicons name="chevron-down" size={14} color={COLORS.textSecondary} />
-          </View>
+          <TouchableOpacity style={styles.sortDropdown} onPress={toggleSort} activeOpacity={0.7}>
+            <Text style={styles.sortText}>
+              Sort: {sortBy === 'name' ? 'Name' : sortBy === 'quantity' ? 'Stock Qty' : 'Price'}
+            </Text>
+            <Ionicons name="swap-vertical" size={14} color={COLORS.green} />
+          </TouchableOpacity>
         </View>
 
         {/* Products List */}
-        {filteredProducts.length === 0 ? (
+        {sortedProducts.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Ionicons name="cube-outline" size={48} color={COLORS.textMuted} />
             <Text style={styles.emptyTitle}>No Products Found</Text>
             <Text style={styles.emptySub}>Try adjusting your search query or add a new product.</Text>
           </View>
         ) : (
-          filteredProducts.map((product) => (
+          sortedProducts.map((product) => (
             <ProductItemCard
               key={product.id}
               product={product}

@@ -1,12 +1,13 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '../store/useAppStore';
 import { COLORS, SHADOWS } from '../theme/theme';
 import { Header } from '../components/Header';
 
-export const ReportsScreen = () => {
+export const ReportsScreen = ({ navigation }: any) => {
   const { products, transactions, settings } = useAppStore();
+  const [timeRange, setTimeRange] = useState<'All Time' | 'This Month' | 'Today'>('All Time');
 
   const totalStockValue = products.reduce((acc, p) => acc + p.quantity * p.buyPrice, 0);
   const totalExpectedRevenue = products.reduce((acc, p) => acc + p.quantity * p.sellPrice, 0);
@@ -26,10 +27,55 @@ export const ReportsScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Header title="Reports & Financials" showNotification={false} />
+      <Header
+        title="Reports & Financials"
+        showNotification={false}
+        rightAction={
+          <TouchableOpacity
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+            activeOpacity={0.7}
+            onPress={() => navigation.navigate('StatementModal')}
+          >
+            <Ionicons name="document-text-outline" size={16} color={COLORS.green} />
+            <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.green }}>Statement</Text>
+          </TouchableOpacity>
+        }
+      />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <Text style={styles.subHeader}>Business health & performance analytics</Text>
+
+        {/* Time Range Filter Pills */}
+        <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
+          {(['All Time', 'This Month', 'Today'] as const).map((range) => {
+            const isActive = timeRange === range;
+            return (
+              <TouchableOpacity
+                key={range}
+                style={{
+                  paddingHorizontal: 12,
+                  paddingVertical: 6,
+                  borderRadius: 16,
+                  backgroundColor: isActive ? COLORS.greenBg : COLORS.card,
+                  borderWidth: 1,
+                  borderColor: isActive ? COLORS.green : COLORS.divider,
+                }}
+                onPress={() => setTimeRange(range)}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={{
+                    fontSize: 12,
+                    fontWeight: isActive ? '700' : '500',
+                    color: isActive ? COLORS.green : COLORS.textSecondary,
+                  }}
+                >
+                  {range}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
 
         {/* Business Value Highlight Card */}
         <View style={styles.highlightCard}>
@@ -37,10 +83,14 @@ export const ReportsScreen = () => {
             <Ionicons name="pie-chart-outline" size={24} color={COLORS.purple} />
             <Text style={styles.highlightTitle}>Total Business Assets</Text>
           </View>
-          <Text style={styles.highlightValue}>
-            {settings.currency}{totalBusinessValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+          <Text 
+            style={styles.highlightValue}
+            numberOfLines={1}
+            adjustsFontSizeToFit={true}
+          >
+            {settings.currency} {totalBusinessValue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
           </Text>
-          <Text style={styles.highlightSub}>Cash Balance ({settings.currency}{cashBalance.toLocaleString()}) + Stock Value ({settings.currency}{totalStockValue.toLocaleString()})</Text>
+          <Text style={styles.highlightSub}>Cash Balance ({settings.currency} {cashBalance.toLocaleString()}) + Stock Value ({settings.currency} {totalStockValue.toLocaleString()})</Text>
         </View>
 
         {/* Financial Metrics Breakdown */}
@@ -49,29 +99,45 @@ export const ReportsScreen = () => {
         <View style={styles.metricsGrid}>
           <View style={styles.metricCard}>
             <Text style={styles.metricLabel}>Total Sales (Income)</Text>
-            <Text style={[styles.metricValue, { color: COLORS.blue }]}>
-              {settings.currency}{totalIncome.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            <Text 
+              style={[styles.metricValue, { color: COLORS.blue }]}
+              numberOfLines={1}
+              adjustsFontSizeToFit={true}
+            >
+              {settings.currency} {totalIncome.toLocaleString('en-US', { minimumFractionDigits: 0 })}
             </Text>
           </View>
 
           <View style={styles.metricCard}>
             <Text style={styles.metricLabel}>Total Expenses</Text>
-            <Text style={[styles.metricValue, { color: COLORS.red }]}>
-              {settings.currency}{totalExpenses.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            <Text 
+              style={[styles.metricValue, { color: COLORS.red }]}
+              numberOfLines={1}
+              adjustsFontSizeToFit={true}
+            >
+              {settings.currency} {totalExpenses.toLocaleString('en-US', { minimumFractionDigits: 0 })}
             </Text>
           </View>
 
           <View style={styles.metricCard}>
             <Text style={styles.metricLabel}>Net Cashflow Profit</Text>
-            <Text style={[styles.metricValue, { color: netProfit >= 0 ? COLORS.green : COLORS.red }]}>
-              {settings.currency}{netProfit.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            <Text 
+              style={[styles.metricValue, { color: netProfit >= 0 ? COLORS.green : COLORS.red }]}
+              numberOfLines={1}
+              adjustsFontSizeToFit={true}
+            >
+              {settings.currency} {netProfit.toLocaleString('en-US', { minimumFractionDigits: 0 })}
             </Text>
           </View>
 
           <View style={styles.metricCard}>
             <Text style={styles.metricLabel}>Potential Stock Profit</Text>
-            <Text style={[styles.metricValue, { color: COLORS.purple }]}>
-              {settings.currency}{expectedProfit.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            <Text 
+              style={[styles.metricValue, { color: COLORS.purple }]}
+              numberOfLines={1}
+              adjustsFontSizeToFit={true}
+            >
+              {settings.currency} {expectedProfit.toLocaleString('en-US', { minimumFractionDigits: 0 })}
             </Text>
           </View>
         </View>
@@ -80,11 +146,16 @@ export const ReportsScreen = () => {
         <Text style={styles.sectionTitle}>Summary Reports</Text>
 
         {[
-          { title: 'Inventory Valuation Report', desc: `${products.length} products tracking ${products.reduce((a, b) => a + b.quantity, 0)} items`, icon: 'cube-outline', color: COLORS.blue },
-          { title: 'Sales & Inflow Report', desc: `${transactions.filter(t => t.type === 'income').length} completed sales records`, icon: 'trending-up-outline', color: COLORS.green },
-          { title: 'Expenses & Outflow Report', desc: `${transactions.filter(t => t.type === 'expense').length} business expenses logged`, icon: 'receipt-outline', color: COLORS.amber },
+          { title: 'Inventory Valuation Report', desc: `${products.length} products tracking ${products.reduce((a, b) => a + b.quantity, 0)} items`, icon: 'cube-outline', color: COLORS.blue, route: 'Inventory' },
+          { title: 'Sales & Inflow Report', desc: `${transactions.filter(t => t.type === 'income').length} completed sales records`, icon: 'trending-up-outline', color: COLORS.green, route: 'StatementModal' },
+          { title: 'Expenses & Outflow Report', desc: `${transactions.filter(t => t.type === 'expense').length} business expenses logged`, icon: 'receipt-outline', color: COLORS.amber, route: 'StatementModal' },
         ].map((item, idx) => (
-          <View key={idx} style={styles.reportRow}>
+          <TouchableOpacity
+            key={idx}
+            style={styles.reportRow}
+            onPress={() => navigation.navigate(item.route)}
+            activeOpacity={0.7}
+          >
             <View style={[styles.reportIconBox, { backgroundColor: item.color + '15' }]}>
               <Ionicons name={item.icon as any} size={22} color={item.color} />
             </View>
@@ -93,7 +164,7 @@ export const ReportsScreen = () => {
               <Text style={styles.reportDesc}>{item.desc}</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
-          </View>
+          </TouchableOpacity>
         ))}
       </ScrollView>
     </View>

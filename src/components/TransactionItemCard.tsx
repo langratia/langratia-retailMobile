@@ -8,12 +8,14 @@ interface TransactionItemCardProps {
   transaction: Transaction;
   currency?: string;
   onPress?: () => void;
+  isLastItem?: boolean;
 }
 
 export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
   transaction,
   currency = 'UGX',
   onPress,
+  isLastItem = false,
 }) => {
   const isCredit = transaction.isCredit;
   const isIncome = transaction.type === 'income';
@@ -25,7 +27,7 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
 
   return (
     <TouchableOpacity
-      style={styles.container}
+      style={[styles.container, isLastItem && { borderBottomWidth: 0 }]}
       onPress={onPress}
       activeOpacity={onPress ? 0.7 : 1}
     >
@@ -49,8 +51,12 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
       </View>
 
       <View style={styles.amountCol}>
-        <Text style={[styles.amountText, { color: amountColor }]}>
-          {amountSign}{currency}{transaction.amount.toFixed(2)}
+        <Text 
+          style={[styles.amountText, { color: amountColor }]}
+          numberOfLines={1}
+          adjustsFontSizeToFit={true}
+        >
+          {amountSign}{currency} {transaction.amount.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
         </Text>
         <Text style={styles.categoryText}>{transaction.category}</Text>
       </View>

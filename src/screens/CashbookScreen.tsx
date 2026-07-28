@@ -16,6 +16,13 @@ import { TransactionItemCard } from '../components/TransactionItemCard';
 export const CashbookScreen = ({ navigation }: any) => {
   const { transactions, settings } = useAppStore();
   const [selectedFilter, setSelectedFilter] = useState('All Transactions');
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'amount'>('newest');
+
+  const toggleSort = () => {
+    if (sortBy === 'newest') setSortBy('oldest');
+    else if (sortBy === 'oldest') setSortBy('amount');
+    else setSortBy('newest');
+  };
 
   const totalIncome = transactions
     .filter((tx) => tx.type === 'income')
@@ -33,6 +40,12 @@ export const CashbookScreen = ({ navigation }: any) => {
     if (selectedFilter === 'Expense') return tx.type === 'expense';
     if (selectedFilter === 'Today') return tx.date === 'Today' || tx.date.includes(new Date().getDate().toString());
     return true;
+  });
+
+  const sortedTransactions = [...filteredTransactions].sort((a, b) => {
+    if (sortBy === 'amount') return b.amount - a.amount;
+    if (sortBy === 'oldest') return a.id.localeCompare(b.id);
+    return b.id.localeCompare(a.id);
   });
 
   return (
@@ -59,32 +72,43 @@ export const CashbookScreen = ({ navigation }: any) => {
         <Text style={styles.subHeader}>Track all your money in and out</Text>
 
         {/* 3 Stat Cards Row */}
-        <View style={styles.metricsRow}>
-          <StatCard
-            title="Cash Balance"
-            value={`${settings.currency}${cashBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
-            trendText="8.5% from last month"
-            iconName="wallet-outline"
-            iconColor={COLORS.green}
-            iconBgColor={COLORS.greenBg}
-          />
-          <StatCard
-            title="Total Income"
-            value={`${settings.currency}${totalIncome.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
-            trendText={`${transactions.filter(t => t.type === 'income').length} Transactions`}
-            iconName="download-outline"
-            iconColor={COLORS.blue}
-            iconBgColor={COLORS.blueBg}
-          />
-          <StatCard
-            title="Total Expenses"
-            value={`${settings.currency}${totalExpenses.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
-            trendText={`${transactions.filter(t => t.type === 'expense').length} Transactions`}
-            iconName="upload-outline"
-            iconColor={COLORS.red}
-            iconBgColor={COLORS.redBg}
-          />
-        </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.metricsRow}
+          style={{ marginBottom: 12 }}
+        >
+          <View style={{ width: 150 }}>
+            <StatCard
+              title="Cash Balance"
+              value={`${settings.currency}${cashBalance.toLocaleString('en-US', { minimumFractionDigits: 0 })}`}
+              trendText="Cash balance"
+              iconName="wallet-outline"
+              iconColor={COLORS.green}
+              iconBgColor={COLORS.greenBg}
+            />
+          </View>
+          <View style={{ width: 150 }}>
+            <StatCard
+              title="Total Income"
+              value={`${settings.currency}${totalIncome.toLocaleString('en-US', { minimumFractionDigits: 0 })}`}
+              trendText={`${transactions.filter(t => t.type === 'income').length} Income entries`}
+              iconName="download-outline"
+              iconColor={COLORS.blue}
+              iconBgColor={COLORS.blueBg}
+            />
+          </View>
+          <View style={{ width: 160 }}>
+            <StatCard
+              title="Total Expenses"
+              value={`${settings.currency}${totalExpenses.toLocaleString('en-US', { minimumFractionDigits: 0 })}`}
+              trendText={`${transactions.filter(t => t.type === 'expense').length} Expense entries`}
+              iconName="upload-outline"
+              iconColor={COLORS.red}
+              iconBgColor={COLORS.redBg}
+            />
+          </View>
+        </ScrollView>
 
         {/* Date Filter Pills */}
         <ScrollView
@@ -121,8 +145,8 @@ export const CashbookScreen = ({ navigation }: any) => {
             );
           })}
 
-          <TouchableOpacity style={styles.filterIconBtn}>
-            <Ionicons name="options-outline" size={18} color={COLORS.textPrimary} />
+          <TouchableOpacity style={styles.filterIconBtn} onPress={toggleSort} activeOpacity={0.7}>
+            <Ionicons name="options-outline" size={18} color={COLORS.green} />
           </TouchableOpacity>
         </ScrollView>
 
@@ -130,24 +154,27 @@ export const CashbookScreen = ({ navigation }: any) => {
         <View style={styles.listContainer}>
           <View style={styles.listHeaderRow}>
             <Text style={styles.listTitle}>All Transactions</Text>
-            <View style={styles.sortDropdown}>
-              <Ionicons name="swap-vertical" size={14} color={COLORS.textSecondary} />
-              <Text style={styles.sortText}>Newest First</Text>
+            <TouchableOpacity style={styles.sortDropdown} onPress={toggleSort} activeOpacity={0.7}>
+              <Ionicons name="swap-vertical" size={14} color={COLORS.green} />
+              <Text style={styles.sortText}>
+                {sortBy === 'newest' ? 'Newest First' : sortBy === 'oldest' ? 'Oldest First' : 'Highest Amount'}
+              </Text>
               <Ionicons name="chevron-down" size={14} color={COLORS.textSecondary} />
-            </View>
+            </TouchableOpacity>
           </View>
 
-          {filteredTransactions.length === 0 ? (
+          {sortedTransactions.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Ionicons name="receipt-outline" size={44} color={COLORS.textMuted} />
               <Text style={styles.emptyText}>No Transactions Found</Text>
             </View>
           ) : (
-            filteredTransactions.map((tx) => (
+            sortedTransactions.map((tx, index) => (
               <TransactionItemCard
                 key={tx.id}
                 transaction={tx}
                 currency={settings.currency}
+                isLastItem={index === sortedTransactions.length - 1}
               />
             ))
           )}
