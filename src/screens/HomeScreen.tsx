@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '../store/useAppStore';
@@ -13,9 +14,19 @@ import { Header } from '../components/Header';
 import { StatCard } from '../components/StatCard';
 import { QuickActionButton } from '../components/QuickActionButton';
 import { Badge } from '../components/Badge';
+import { SkeletonLoader, CardSkeleton } from '../components/SkeletonLoader';
 
 export const HomeScreen = ({ navigation }: any) => {
   const { products, transactions, settings } = useAppStore();
+  const [refreshing, setRefreshing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const onRefresh = React.useCallback(() => {
+    setRefreshing(true);
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 1000);
+  }, []);
 
   // Dynamic Time Greeting
   const currentHour = new Date().getHours();
@@ -66,6 +77,14 @@ export const HomeScreen = ({ navigation }: any) => {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[COLORS.green]}
+            tintColor={COLORS.green}
+          />
+        }
       >
         {/* Dynamic Greeting Banner */}
         <View style={styles.greetingContainer}>

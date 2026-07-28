@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Alert,
   TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '../store/useAppStore';
@@ -28,6 +29,7 @@ export const RecordSaleModal = ({ navigation }: any) => {
   const [isCredit, setIsCredit] = useState<boolean>(false);
   const [customerName, setCustomerName] = useState<string>('');
   const [customerPhone, setCustomerPhone] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   useEffect(() => {
     if (selectedProduct) {
@@ -60,23 +62,29 @@ export const RecordSaleModal = ({ navigation }: any) => {
       return;
     }
 
-    const success = recordSale(
-      selectedProduct.id,
-      quantitySold,
-      priceNum,
-      isCredit,
-      customerName,
-      customerPhone
-    );
-    if (success) {
-      Alert.alert(
-        isCredit ? 'Credit Sale Recorded! 📝' : 'Sale Recorded! 🎉',
-        isCredit
-          ? `Sold ${quantitySold} unit(s) to ${customerName} on Credit. Outstanding: ${settings.currency} ${(priceNum * quantitySold).toLocaleString()}.`
-          : `Sold ${quantitySold} unit(s) of ${selectedProduct.name}. Stock updated and cashbook credited with ${settings.currency} ${(priceNum * quantitySold).toLocaleString()}.`,
-        [{ text: 'OK', onPress: () => navigation.goBack() }]
+    setIsSubmitting(true);
+
+    setTimeout(() => {
+      const success = recordSale(
+        selectedProduct.id,
+        quantitySold,
+        priceNum,
+        isCredit,
+        customerName,
+        customerPhone
       );
-    }
+      setIsSubmitting(false);
+
+      if (success) {
+        Alert.alert(
+          isCredit ? 'Credit Sale Recorded! 📝' : 'Sale Recorded! 🎉',
+          isCredit
+            ? `Sold ${quantitySold} unit(s) to ${customerName} on Credit. Outstanding: ${settings.currency} ${(priceNum * quantitySold).toLocaleString()}.`
+            : `Sold ${quantitySold} unit(s) of ${selectedProduct.name}. Stock updated and cashbook credited with ${settings.currency} ${(priceNum * quantitySold).toLocaleString()}.`,
+          [{ text: 'OK', onPress: () => navigation.goBack() }]
+        );
+      }
+    }, 400);
   };
 
   const currentPriceNum = parseFloat(customPrice) || 0;
@@ -295,12 +303,19 @@ export const RecordSaleModal = ({ navigation }: any) => {
 
                 {/* Confirm Sale Button */}
                 <TouchableOpacity
-                  style={styles.confirmBtn}
+                  style={[styles.confirmBtn, isSubmitting && { opacity: 0.7 }]}
                   onPress={handleConfirmSale}
+                  disabled={isSubmitting}
                   activeOpacity={0.8}
                 >
-                  <Ionicons name="cart-outline" size={22} color={COLORS.card} />
-                  <Text style={styles.confirmBtnText}>Complete Sale</Text>
+                  {isSubmitting ? (
+                    <ActivityIndicator size="small" color={COLORS.card} />
+                  ) : (
+                    <>
+                      <Ionicons name="cart-outline" size={22} color={COLORS.card} />
+                      <Text style={styles.confirmBtnText}>Complete Sale</Text>
+                    </>
+                  )}
                 </TouchableOpacity>
               </View>
             )}

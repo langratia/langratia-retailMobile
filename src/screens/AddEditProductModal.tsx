@@ -7,6 +7,7 @@ import {
   TextInput,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '../store/useAppStore';
@@ -32,6 +33,7 @@ export const AddEditProductModal = ({ route, navigation }: any) => {
   const [quantity, setQuantity] = useState(
     existingProduct ? existingProduct.quantity.toString() : ''
   );
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const categories: ProductCategory[] = ['Smartphones', 'Accessories', 'Electronics', 'General'];
 
@@ -49,29 +51,34 @@ export const AddEditProductModal = ({ route, navigation }: any) => {
       return;
     }
 
-    if (isEditing) {
-      updateProduct(existingProduct.id, {
-        name,
-        category,
-        buyPrice: bPrice,
-        sellPrice: sPrice,
-        quantity: qty,
-      });
-    } else {
-      addProduct({
-        name,
-        category,
-        buyPrice: bPrice,
-        sellPrice: sPrice,
-        quantity: qty,
-      });
-    }
+    setIsSubmitting(true);
 
-    Alert.alert(
-      isEditing ? 'Product Updated! 🎉' : 'Product Added! 🎉',
-      `${name} has been successfully ${isEditing ? 'updated' : 'added to inventory'}.`,
-      [{ text: 'OK', onPress: () => navigation.goBack() }]
-    );
+    setTimeout(() => {
+      if (isEditing) {
+        updateProduct(existingProduct.id, {
+          name,
+          category,
+          buyPrice: bPrice,
+          sellPrice: sPrice,
+          quantity: qty,
+        });
+      } else {
+        addProduct({
+          name,
+          category,
+          buyPrice: bPrice,
+          sellPrice: sPrice,
+          quantity: qty,
+        });
+      }
+      setIsSubmitting(false);
+
+      Alert.alert(
+        'Success! 🎉',
+        isEditing ? `${name} updated successfully!` : `${name} added to inventory!`,
+        [{ text: 'OK', onPress: () => navigation.goBack() }]
+      );
+    }, 400);
   };
 
   return (
@@ -175,14 +182,22 @@ export const AddEditProductModal = ({ route, navigation }: any) => {
             height: 52,
             gap: 8,
             marginTop: 12,
+            opacity: isSubmitting ? 0.7 : 1,
           }}
           onPress={handleSave}
+          disabled={isSubmitting}
           activeOpacity={0.8}
         >
-          <Ionicons name="checkmark-circle-outline" size={22} color={COLORS.card} />
-          <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.card }}>
-            {isEditing ? 'Update Product' : 'Save Product'}
-          </Text>
+          {isSubmitting ? (
+            <ActivityIndicator size="small" color={COLORS.card} />
+          ) : (
+            <>
+              <Ionicons name="checkmark-circle-outline" size={22} color={COLORS.card} />
+              <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.card }}>
+                {isEditing ? 'Update Product' : 'Save Product'}
+              </Text>
+            </>
+          )}
         </TouchableOpacity>
       </ScrollView>
     </View>
