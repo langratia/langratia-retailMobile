@@ -156,33 +156,54 @@ on a neutral background with soft accent colors to highlight important
 information. This makes the application feel professional, trustworthy,
 and easy to scan.
 
-### Typography
-- **Primary Font:** Inter or Roboto (Clean, highly legible sans-serif)
-- **Headings:** Semi-bold or Bold for hierarchy and clear sectioning
-- **Data/Numbers:** Monospaced or tabular numbers for easy reading of financial figures
+### Design Philosophy
 
-### Color Palette
+The application uses a **neutral foundation** (`#F8FAFC` and `#FFFFFF`) with **meaningful accent colors**:
+* 🟢 **Green** → Cash, profit, positive values, available stock.
+* 🔵 **Blue** → Inventory information and informational metrics.
+* 🟠 **Amber** → Warnings, sales highlights, and low stock.
+* 🟣 **Purple** → Business value, reports, and analytics.
+* 🔴 **Red** → Expenses, losses, and out-of-stock indicators.
 
-| Purpose | Color |
+This consistent palette ensures that users can quickly recognize the meaning of colors across all screens, making the app intuitive and professional.
+
+### Shared Colors Across the Entire App
+These should never change between screens.
+
+| Purpose | Hex |
 | :--- | :--- |
 | Background | `#F8FAFC` |
 | Card | `#FFFFFF` |
-| Primary Green | `#10B981` |
-| Success Light | `#ECFDF5` |
-| Blue | `#3B82F6` |
-| Blue Light | `#EFF6FF` |
-| Orange | `#F59E0B` |
-| Orange Light | `#FFF7ED` |
-| Purple | `#8B5CF6` |
-| Purple Light | `#F5F3FF` |
-| Error | `#EF4444` |
-| Error Light | `#FEF2F2` |
 | Primary Text | `#111827` |
 | Secondary Text | `#6B7280` |
-| Disabled Text | `#9CA3AF` |
 | Divider | `#E5E7EB` |
+| Primary Green | `#10B981` |
+| Blue | `#3B82F6` |
+| Amber | `#F59E0B` |
+| Purple | `#8B5CF6` |
+| Red | `#EF4444` |
+| Green Background | `#ECFDF5` |
+| Blue Background | `#EFF6FF` |
+| Amber Background | `#FFF7ED` |
+| Purple Background | `#F5F3FF` |
+| Red Background | `#FEE2E2` |
+
+### Typography
+
+| Element | Font | Weight | Size |
+| :--- | :--- | :--- | :--- |
+| Screen Title | Inter | Bold (700) | 28px |
+| Card Value | Inter | Bold (700) | 24px |
+| Card Title | Inter | Medium (500) | 15px |
+| Section Title | Inter | SemiBold (600) | 20px |
+| Body Text | Inter | Regular (400) | 16px |
+| Caption | Inter | Regular (400) | 13px |
+
+---
 
 ### Screen Breakdowns
+
+Since all three screens are part of the same application, they should use **one consistent design system**. The difference between screens comes from **accent colors**, while the background, typography, cards, and spacing remain identical.
 
 <table>
   <tr>
@@ -191,13 +212,25 @@ and easy to scan.
     </td>
     <td width="65%" valign="top">
       <h4>1. Home (Dashboard)</h4>
-      <p>The dashboard provides an immediate overview of the business's financial position at a glance. It utilizes color-coded cards to draw attention to critical metrics (e.g., Cash Balance, Stock Value, and Profit/Loss) and offers quick access to the most frequent actions.</p>
-      <h5>Palette Highlights:</h5>
+      <p><b>Purpose:</b> A quick overview of the business's financial and inventory health.</p>
+      <h5>Colors:</h5>
       <ul>
-        <li>🟢 <b>Success Green:</b> <code>#10B981</code> (Cash/Profit positive)</li>
-        <li>🔵 <b>Primary Blue:</b> <code>#3B82F6</code> (Action buttons)</li>
-        <li>🟠 <b>Warning Orange:</b> <code>#F59E0B</code> (Low stock alerts)</li>
-        <li>🟣 <b>Accent Purple:</b> <code>#8B5CF6</code> (Stock value highlights)</li>
+        <li><b>Background:</b> <code>#F8FAFC</code></li>
+        <li><b>Cards:</b> <code>#FFFFFF</code></li>
+        <li><b>Primary (Cash/Profit):</b> <code>#10B981</code> (Emerald Green)</li>
+        <li><b>Stock Value:</b> <code>#3B82F6</code> (Royal Blue)</li>
+        <li><b>Sales:</b> <code>#F59E0B</code> (Amber)</li>
+        <li><b>Reports:</b> <code>#8B5CF6</code> (Purple)</li>
+        <li><b>Text:</b> <code>#111827</code> (Dark Gray)</li>
+        <li><b>Secondary Text:</b> <code>#6B7280</code> (Gray)</li>
+        <li><b>Divider:</b> <code>#E5E7EB</code> (Light Gray)</li>
+      </ul>
+      <h5>Soft Accent Backgrounds:</h5>
+      <ul>
+        <li><b>Green:</b> <code>#ECFDF5</code></li>
+        <li><b>Blue:</b> <code>#EFF6FF</code></li>
+        <li><b>Amber:</b> <code>#FFF7ED</code></li>
+        <li><b>Purple:</b> <code>#F5F3FF</code></li>
       </ul>
     </td>
   </tr>
@@ -210,12 +243,25 @@ and easy to scan.
     </td>
     <td width="65%" valign="top">
       <h4>2. Inventory</h4>
-      <p>The Inventory screen keeps track of all products with clear visual hierarchy. Products are displayed in clean list items with their respective quantities, buying/selling prices, and subtle color indicators for stock health.</p>
-      <h5>Palette Highlights:</h5>
+      <p><b>Purpose:</b> Track products and stock levels.</p>
+      <h5>Colors:</h5>
       <ul>
-        <li>⚪ <b>Card Background:</b> <code>#FFFFFF</code> (Clean list items)</li>
-        <li>🔘 <b>Secondary Text:</b> <code>#6B7280</code> (Product details)</li>
-        <li>🔵 <b>Primary Blue:</b> <code>#3B82F6</code> (Add Product button)</li>
+        <li><b>Background:</b> <code>#F8FAFC</code></li>
+        <li><b>Cards:</b> <code>#FFFFFF</code></li>
+        <li><b>Inventory Primary:</b> <code>#3B82F6</code> (Royal Blue)</li>
+        <li><b>Units Available:</b> <code>#10B981</code> (Emerald Green)</li>
+        <li><b>Low Stock:</b> <code>#F59E0B</code> (Amber)</li>
+        <li><b>Out of Stock:</b> <code>#EF4444</code> (Red)</li>
+        <li><b>Product Value:</b> <code>#8B5CF6</code> (Purple)</li>
+        <li><b>Text:</b> <code>#111827</code></li>
+        <li><b>Secondary Text:</b> <code>#6B7280</code></li>
+      </ul>
+      <h5>Badges:</h5>
+      <ul>
+        <li><b>Available:</b> BG <code>#ECFDF5</code> / Text <code>#10B981</code></li>
+        <li><b>Low Stock:</b> BG <code>#FEF3C7</code> / Text <code>#F59E0B</code></li>
+        <li><b>Out of Stock:</b> BG <code>#FEE2E2</code> / Text <code>#EF4444</code></li>
+        <li><b>Product Icon Background:</b> <code>#EFF6FF</code></li>
       </ul>
     </td>
   </tr>
@@ -228,12 +274,26 @@ and easy to scan.
     </td>
     <td width="65%" valign="top">
       <h4>3. Cashbook</h4>
-      <p>The Cashbook acts as a transparent ledger of all business transactions. Incomes and expenses are distinctively marked with green and red indicators respectively, making it simple to track the flow of money.</p>
-      <h5>Palette Highlights:</h5>
+      <p><b>Purpose:</b> Track money entering and leaving the business.</p>
+      <h5>Colors:</h5>
       <ul>
-        <li>🟢 <b>Income Green:</b> <code>#10B981</code> (Money in)</li>
-        <li>🔴 <b>Expense Red:</b> <code>#EF4444</code> (Money out)</li>
-        <li>⚪ <b>Card Background:</b> <code>#FFFFFF</code> (Transaction history)</li>
+        <li><b>Background:</b> <code>#F8FAFC</code></li>
+        <li><b>Cards:</b> <code>#FFFFFF</code></li>
+        <li><b>Cash Balance:</b> <code>#10B981</code> (Emerald Green)</li>
+        <li><b>Income:</b> <code>#3B82F6</code> (Blue)</li>
+        <li><b>Expenses:</b> <code>#EF4444</code> (Red)</li>
+        <li><b>Filter Active:</b> <code>#10B981</code> (Emerald Green)</li>
+        <li><b>Filter Background:</b> <code>#ECFDF5</code> (Light Green)</li>
+        <li><b>Transaction Divider:</b> <code>#E5E7EB</code></li>
+        <li><b>Text:</b> <code>#111827</code></li>
+        <li><b>Secondary Text:</b> <code>#6B7280</code></li>
+      </ul>
+      <h5>Transaction Colors:</h5>
+      <ul>
+        <li><b>Income:</b> Text <code>#10B981</code> / Icon BG <code>#ECFDF5</code></li>
+        <li><b>Expense:</b> Text <code>#EF4444</code> / Icon BG <code>#FEE2E2</code></li>
+        <li><b>Positive Balance:</b> <code>#10B981</code></li>
+        <li><b>Negative Balance:</b> <code>#EF4444</code></li>
       </ul>
     </td>
   </tr>
