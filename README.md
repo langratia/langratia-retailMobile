@@ -184,14 +184,57 @@ and easy to scan.
 
 ### Screen Breakdowns
 
-#### 1. Home (Dashboard)
-The dashboard provides an immediate overview of the business's financial position at a glance. It utilizes color-coded cards to draw attention to critical metrics (e.g., Cash Balance, Stock Value, and Profit/Loss) and offers quick access to the most frequent actions.
-![Home Dashboard Screen](assets/home_dashboard.png)
+<table>
+  <tr>
+    <td width="35%" valign="top">
+      <img src="assets/home_dashboard.png" width="100%" alt="Home Dashboard Screen" />
+    </td>
+    <td width="65%" valign="top">
+      <h4>1. Home (Dashboard)</h4>
+      <p>The dashboard provides an immediate overview of the business's financial position at a glance. It utilizes color-coded cards to draw attention to critical metrics (e.g., Cash Balance, Stock Value, and Profit/Loss) and offers quick access to the most frequent actions.</p>
+      <h5>Palette Highlights:</h5>
+      <ul>
+        <li>🟢 <b>Success Green:</b> <code>#10B981</code> (Cash/Profit positive)</li>
+        <li>🔵 <b>Primary Blue:</b> <code>#3B82F6</code> (Action buttons)</li>
+        <li>🟠 <b>Warning Orange:</b> <code>#F59E0B</code> (Low stock alerts)</li>
+        <li>🟣 <b>Accent Purple:</b> <code>#8B5CF6</code> (Stock value highlights)</li>
+      </ul>
+    </td>
+  </tr>
+</table>
 
-#### 2. Inventory
-The Inventory screen keeps track of all products with clear visual hierarchy. Products are displayed in clean list items with their respective quantities, buying/selling prices, and subtle color indicators for stock health.
-![Inventory Screen](assets/inventory_screen.png)
+<table>
+  <tr>
+    <td width="35%" valign="top">
+      <img src="assets/inventory_screen.png" width="100%" alt="Inventory Screen" />
+    </td>
+    <td width="65%" valign="top">
+      <h4>2. Inventory</h4>
+      <p>The Inventory screen keeps track of all products with clear visual hierarchy. Products are displayed in clean list items with their respective quantities, buying/selling prices, and subtle color indicators for stock health.</p>
+      <h5>Palette Highlights:</h5>
+      <ul>
+        <li>⚪ <b>Card Background:</b> <code>#FFFFFF</code> (Clean list items)</li>
+        <li>🔘 <b>Secondary Text:</b> <code>#6B7280</code> (Product details)</li>
+        <li>🔵 <b>Primary Blue:</b> <code>#3B82F6</code> (Add Product button)</li>
+      </ul>
+    </td>
+  </tr>
+</table>
 
-#### 3. Cashbook
-The Cashbook acts as a transparent ledger of all business transactions. Incomes and expenses are distinctively marked with green and red indicators respectively, making it simple to track the flow of money.
-![Cashbook Screen](assets/cashbook_screen.png)
+<table>
+  <tr>
+    <td width="35%" valign="top">
+      <img src="assets/cashbook_screen.png" width="100%" alt="Cashbook Screen" />
+    </td>
+    <td width="65%" valign="top">
+      <h4>3. Cashbook</h4>
+      <p>The Cashbook acts as a transparent ledger of all business transactions. Incomes and expenses are distinctively marked with green and red indicators respectively, making it simple to track the flow of money.</p>
+      <h5>Palette Highlights:</h5>
+      <ul>
+        <li>🟢 <b>Income Green:</b> <code>#10B981</code> (Money in)</li>
+        <li>🔴 <b>Expense Red:</b> <code>#EF4444</code> (Money out)</li>
+        <li>⚪ <b>Card Background:</b> <code>#FFFFFF</code> (Transaction history)</li>
+      </ul>
+    </td>
+  </tr>
+</table>
