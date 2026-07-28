@@ -145,3 +145,37 @@ total expenses, gross profit, net profit, and estimated business value.
 ### 10. Settings
 
 - Business Name, Currency, Low Stock Limit, Logout
+
+---
+
+## 🎨 Design & Color Palette
+
+The app follows a **Modern Fintech + Material 3** design philosophy, relying
+on a neutral background with soft accent colors to highlight important
+information. This makes the application feel professional, trustworthy,
+and easy to scan.
+
+### Color Palette
+
+| Purpose | Color |
+| :--- | :--- |
+| Background | `#F8FAFC` |
+| Card | `#FFFFFF` |
+| Primary Green | `#10B981` |
+| Success Light | `#ECFDF5` |
+| Blue | `#3B82F6` |
+| Blue Light | `#EFF6FF` |
+| Orange | `#F59E0B` |
+| Orange Light | `#FFF7ED` |
+| Purple | `#8B5CF6` |
+| Purple Light | `#F5F3FF` |
+| Error | `#EF4444` |
+| Error Light | `#FEF2F2` |
+| Primary Text | `#111827` |
+| Secondary Text | `#6B7280` |
+| Disabled Text | `#9CA3AF` |
+| Divider | `#E5E7EB` |
+
+### Sample Screen
+
+[Insert sample UI image here]
