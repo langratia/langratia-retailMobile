@@ -20,22 +20,15 @@ without the complexity of a full accounting or enterprise management system.
 
 ---
 
-## 💡 The Key Idea
+## 🔹 The Key Idea
 
-The app doesn't just say:
-> **12 Samsung A16s left**
+Instead of simply stating stock quantities, the app provides actionable financial
+insights for the owner:
 
-It tells the owner:
-
-- You own **12 units** worth **$2,160** (based on cost price).
-- If you sell all of them, expected revenue is **$2,640**.
-- Expected profit is **$480**.
-
-Your business currently has:
-
-- Cash: **$3,500**
-- Stock value: **$8,200**
-- Total business assets: **$11,700**
+- The total cost value of the current inventory.
+- Expected revenue and profit upon selling the stock.
+- The business's overall current cash balance.
+- Total business assets (Cash + Stock value).
 
 That way, the owner doesn't just know **what's in stock**—they understand **the
 financial position of the business**, which helps them decide whether they can
@@ -45,7 +38,7 @@ to use.
 
 ---
 
-## 📱 Navigation & Structure
+## 🔸 Navigation & Structure
 
 Since it's a mobile application, we keep it to as few screens as possible while
 keeping everything easy to access.
@@ -55,19 +48,19 @@ keeping everything easy to access.
 To keep navigation simple, we use five main tabs:
 
 ```text
-🏠 Home | 📦 Inventory | 💵 Cashbook | 📊 Reports | ⚙️ Settings
+✧ Home | ✧ Inventory | ✧ Cashbook | ✧ Reports | ✧ Settings
 ```
 
 Floating action buttons or dashboard shortcuts are available for common tasks:
 
-- ➕ Add Product
-- ➕ Add Stock
-- 🛒 Record Sale
-- ➕ Add Expense
+- ⊞ Add Product
+- ⊞ Add Stock
+- ⊞ Record Sale
+- ⊞ Add Expense
 
 ---
 
-## 🧩 Modules & Screens
+## 🔹 Modules & Screens
 
 The app is organized into 10 simple screens across the 5 main tabs.
 
@@ -82,10 +75,10 @@ The app is organized into 10 simple screens across the 5 main tabs.
 This is the first screen after login.
 Shows:
 
-- 💰 Cash Balance
-- 📦 Stock Value
-- 📈 Profit/Loss
-- ⚠️ Low Stock Items
+- ⬩ Cash Balance
+- ⬩ Stock Value
+- ⬩ Profit/Loss
+- ⬩ Low Stock Items
 - Quick summary of today's activity
 
 *Quick action buttons:* Add Stock, Record Sale, Add Expense, View Reports.
@@ -101,13 +94,6 @@ For each product:
 - Quantity in stock (units)
 
 *Actions:* Search, Add Product, Tap a product to edit.
-
-**Example:**
-
-| Product | Buy Price | Sell Price | Units |
-| :--- | ---: | ---: | ---: |
-| Samsung A16 | $180 | $220 | 12 |
-| Charger | $4 | $8 | 35 |
 
 ### 4. Product Details
 
