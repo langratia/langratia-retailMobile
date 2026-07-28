@@ -14,10 +14,18 @@ import { Header } from '../components/Header';
 import { StatCard } from '../components/StatCard';
 import { ProductItemCard } from '../components/ProductItemCard';
 
-export const InventoryScreen = ({ navigation }: any) => {
+export const InventoryScreen = ({ route, navigation }: any) => {
   const { products, settings, adjustStock } = useAppStore();
   const [searchQuery, setSearchQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('All');
+  const [categoryFilter, setCategoryFilter] = useState(
+    route?.params?.filterLowStock ? 'Low Stock' : 'All'
+  );
+
+  React.useEffect(() => {
+    if (route?.params?.filterLowStock) {
+      setCategoryFilter('Low Stock');
+    }
+  }, [route?.params?.filterLowStock]);
 
   // Stats Computations
   const totalProductsCount = products.length;
@@ -30,7 +38,14 @@ export const InventoryScreen = ({ navigation }: any) => {
   const filteredProducts = products.filter((p) => {
     const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.category.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = categoryFilter === 'All' || p.category === categoryFilter;
+    
+    let matchesCategory = true;
+    if (categoryFilter === 'Low Stock') {
+      matchesCategory = p.quantity <= settings.lowStockThreshold;
+    } else if (categoryFilter !== 'All') {
+      matchesCategory = p.category === categoryFilter;
+    }
+
     return matchesSearch && matchesCategory;
   });
 
@@ -107,6 +122,59 @@ export const InventoryScreen = ({ navigation }: any) => {
             iconBgColor={COLORS.purpleBg}
           />
         </View>
+
+        {/* Category & Low Stock Filter Pills */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ flexDirection: 'row', gap: 8, marginVertical: 12 }}
+        >
+          {['All', 'Low Stock', 'Smartphones', 'Accessories', 'Electronics', 'General'].map((cat) => {
+            const isActive = categoryFilter === cat;
+            const isLowStock = cat === 'Low Stock';
+            return (
+              <TouchableOpacity
+                key={cat}
+                style={{
+                  paddingHorizontal: 14,
+                  paddingVertical: 7,
+                  borderRadius: 20,
+                  backgroundColor: isActive
+                    ? isLowStock
+                      ? COLORS.amberBg
+                      : COLORS.greenBg
+                    : COLORS.card,
+                  borderWidth: 1,
+                  borderColor: isActive
+                    ? isLowStock
+                      ? COLORS.amber
+                      : COLORS.green
+                    : COLORS.divider,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 4,
+                }}
+                onPress={() => setCategoryFilter(cat)}
+                activeOpacity={0.7}
+              >
+                {isLowStock && <Ionicons name="warning-outline" size={14} color={isActive ? COLORS.amber : COLORS.textSecondary} />}
+                <Text
+                  style={{
+                    fontSize: 12,
+                    fontWeight: isActive ? '700' : '500',
+                    color: isActive
+                      ? isLowStock
+                        ? COLORS.amber
+                        : COLORS.green
+                      : COLORS.textSecondary,
+                  }}
+                >
+                  {cat} {isLowStock ? `(${products.filter(p => p.quantity <= settings.lowStockThreshold).length})` : ''}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
 
         {/* Products List Header */}
         <View style={styles.listHeaderRow}>

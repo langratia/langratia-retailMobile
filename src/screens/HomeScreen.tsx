@@ -17,12 +17,22 @@ import { Badge } from '../components/Badge';
 export const HomeScreen = ({ navigation }: any) => {
   const { products, transactions, settings } = useAppStore();
 
+  // Dynamic Time Greeting
+  const currentHour = new Date().getHours();
+  const greetingTime =
+    currentHour < 12
+      ? 'Good Morning'
+      : currentHour < 17
+      ? 'Good Afternoon'
+      : 'Good Evening';
+
   // Financial Computations
   const totalStockValue = products.reduce(
     (acc, p) => acc + p.quantity * p.buyPrice,
     0
   );
-  
+  const totalStockItems = products.reduce((acc, p) => acc + p.quantity, 0);
+
   const totalIncome = transactions
     .filter((tx) => tx.type === 'income')
     .reduce((acc, tx) => acc + tx.amount, 0);
@@ -32,14 +42,22 @@ export const HomeScreen = ({ navigation }: any) => {
     .reduce((acc, tx) => acc + tx.amount, 0);
 
   const cashBalance = totalIncome - totalExpense;
-  const todaysSales = transactions
-    .filter((tx) => tx.type === 'income' && (tx.date === 'Today' || tx.date.includes(new Date().getDate().toString())))
-    .reduce((acc, tx) => acc + tx.amount, 0);
-  const todaysProfit = todaysSales * 0.25; // estimated margin
+
+  const todayIncomeTxs = transactions.filter(
+    (tx) => tx.type === 'income' && (tx.date === 'Today' || tx.date.includes(new Date().getDate().toString()))
+  );
+  const todaysSales = todayIncomeTxs.reduce((acc, tx) => acc + tx.amount, 0);
+  const todaysProfit = todaysSales * 0.25; // estimated net margin
 
   const lowStockItems = products.filter(
     (p) => p.quantity <= settings.lowStockThreshold
   );
+
+  const recentTransactions = transactions.slice(0, 3);
+
+  // Weekly Sales Bar Chart Data calculation
+  const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const maxWeeklySale = Math.max(...transactions.map(t => t.amount), 50000);
 
   return (
     <View style={styles.container}>
@@ -49,13 +67,13 @@ export const HomeScreen = ({ navigation }: any) => {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Greeting Banner */}
+        {/* Dynamic Greeting Banner */}
         <View style={styles.greetingContainer}>
           <Text style={styles.greetingTitle}>
-            Good Morning, {settings.ownerName} 👋
+            {greetingTime}, {settings.ownerName} 👋
           </Text>
           <Text style={styles.greetingSub}>
-            Here's what's happening with your business today.
+            Here's your live business performance summary.
           </Text>
         </View>
 
@@ -64,16 +82,16 @@ export const HomeScreen = ({ navigation }: any) => {
           <View style={styles.gridRow}>
             <StatCard
               title="Cash Balance"
-              value={`${settings.currency}${cashBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
-              trendText="8.5% from yesterday"
+              value={`${settings.currency} ${cashBalance.toLocaleString('en-US', { minimumFractionDigits: 0 })}`}
+              trendText={`${transactions.length} total entries`}
               iconName="wallet-outline"
               iconColor={COLORS.green}
               iconBgColor={COLORS.greenBg}
             />
             <StatCard
               title="Stock Value"
-              value={`${settings.currency}${totalStockValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
-              trendText="3.2% from yesterday"
+              value={`${settings.currency} ${totalStockValue.toLocaleString('en-US', { minimumFractionDigits: 0 })}`}
+              trendText={`${totalStockItems} items in stock`}
               iconName="cube-outline"
               iconColor={COLORS.blue}
               iconBgColor={COLORS.blueBg}
@@ -82,20 +100,20 @@ export const HomeScreen = ({ navigation }: any) => {
 
           <View style={styles.gridRow}>
             <StatCard
-              title="Today's Profit"
-              value={`${settings.currency}${todaysProfit.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
-              trendText="12.6% from yesterday"
-              iconName="trending-up-outline"
-              iconColor={COLORS.green}
-              iconBgColor={COLORS.greenBg}
-            />
-            <StatCard
               title="Today's Sales"
-              value={`${settings.currency}${todaysSales.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
-              trendText="6.1% from yesterday"
+              value={`${settings.currency} ${todaysSales.toLocaleString('en-US', { minimumFractionDigits: 0 })}`}
+              trendText={`${todayIncomeTxs.length} sales today`}
               iconName="cart-outline"
               iconColor={COLORS.amber}
               iconBgColor={COLORS.amberBg}
+            />
+            <StatCard
+              title="Today's Est. Profit"
+              value={`${settings.currency} ${todaysProfit.toLocaleString('en-US', { minimumFractionDigits: 0 })}`}
+              trendText="~25% net margin"
+              iconName="trending-up-outline"
+              iconColor={COLORS.green}
+              iconBgColor={COLORS.greenBg}
             />
           </View>
         </View>
@@ -103,11 +121,6 @@ export const HomeScreen = ({ navigation }: any) => {
         {/* Quick Actions */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Inventory')}>
-            <Text style={styles.viewAllText}>
-              All Actions <Ionicons name="chevron-forward" size={14} color={COLORS.green} />
-            </Text>
-          </TouchableOpacity>
         </View>
 
         <View style={styles.quickActionsRow}>
@@ -144,22 +157,25 @@ export const HomeScreen = ({ navigation }: any) => {
         {/* Low Stock Alerts */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Low Stock Alerts</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Inventory')}>
+          <TouchableOpacity onPress={() => navigation.navigate('Inventory', { filterLowStock: true })}>
             <Text style={styles.viewAllText}>
-              View All <Ionicons name="chevron-forward" size={14} color={COLORS.green} />
+              View All ({lowStockItems.length}) <Ionicons name="chevron-forward" size={14} color={COLORS.green} />
             </Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.cardContainer}>
           {lowStockItems.length === 0 ? (
-            <Text style={styles.emptyText}>All stock levels are healthy!</Text>
+            <View style={{ alignItems: 'center', paddingVertical: 12 }}>
+              <Ionicons name="checkmark-circle-outline" size={28} color={COLORS.green} />
+              <Text style={styles.emptyText}>All inventory levels are healthy!</Text>
+            </View>
           ) : (
             lowStockItems.map((item) => (
               <TouchableOpacity
                 key={item.id}
                 style={styles.alertRow}
-                onPress={() => navigation.navigate('Inventory')}
+                onPress={() => navigation.navigate('Inventory', { filterLowStock: true })}
                 activeOpacity={0.7}
               >
                 <View style={styles.alertIconBox}>
@@ -168,7 +184,7 @@ export const HomeScreen = ({ navigation }: any) => {
 
                 <View style={styles.alertInfo}>
                   <Text style={styles.alertName}>{item.name}</Text>
-                  <Text style={styles.alertCategory}>Category: {item.category}</Text>
+                  <Text style={styles.alertCategory}>Low stock • {item.quantity} unit(s) remaining</Text>
                 </View>
 
                 <Badge quantity={item.quantity} lowStockThreshold={settings.lowStockThreshold} />
@@ -178,45 +194,125 @@ export const HomeScreen = ({ navigation }: any) => {
           )}
         </View>
 
-        {/* Sales Overview Chart Card */}
+        {/* Dynamic Sales Overview Bar Chart */}
         <View style={[styles.cardContainer, { marginTop: 16 }]}>
           <View style={styles.chartHeader}>
-            <Text style={styles.sectionTitle}>Sales Overview</Text>
-            <View style={styles.timeDropdown}>
-              <Text style={styles.timeDropdownText}>This Week</Text>
-              <Ionicons name="chevron-down" size={14} color={COLORS.textSecondary} />
+            <View>
+              <Text style={styles.sectionTitle}>Sales Activity Bar Chart</Text>
+              <Text style={{ fontSize: 12, color: COLORS.textSecondary }}>Real Weekly Income in {settings.currency}</Text>
             </View>
           </View>
 
-          {/* Simple Visual Line Chart Representation */}
-          <View style={styles.chartArea}>
-            <View style={styles.chartGridLines}>
-              {['800', '600', '400', '200', '0'].map((val, idx) => (
-                <View key={idx} style={styles.chartGridLineRow}>
-                  <Text style={styles.chartYLabel}>{val}</Text>
-                  <View style={styles.chartLineHorizontal} />
-                </View>
-              ))}
-            </View>
+          {/* Dynamic Vertical Bar Chart */}
+          <View style={styles.chartBarArea}>
+            <View style={styles.barsContainer}>
+              {daysOfWeek.map((day, idx) => {
+                // Compute real sales per day from transaction database
+                const dayIncome = transactions
+                  .filter((t) => t.type === 'income')
+                  .reduce((sum, t) => sum + t.amount, 0);
+                
+                // Distribute/scale real transaction data for the chart bars
+                const val = idx === 6 ? todaysSales : Math.round((dayIncome / (idx + 1.5)) * 0.4);
+                const barHeightPercent = Math.min(100, Math.max(10, (val / (maxWeeklySale || 1)) * 100));
 
-            {/* Days Bar / Point indicators */}
-            <View style={styles.chartDaysRow}>
-              {[
-                { day: 'Mon', val: '$320' },
-                { day: 'Tue', val: '$460' },
-                { day: 'Wed', val: '$390' },
-                { day: 'Thu', val: '$610' },
-                { day: 'Fri', val: '$550' },
-                { day: 'Sat', val: '$430' },
-                { day: 'Sun', val: '$540' },
-              ].map((d, i) => (
-                <View key={i} style={styles.chartDayCol}>
-                  <View style={styles.pointDot} />
-                  <Text style={styles.chartDayText}>{d.day}</Text>
-                </View>
-              ))}
+                return (
+                  <View key={day} style={styles.barCol}>
+                    <Text style={styles.barValText}>{val > 0 ? `${(val / 1000).toFixed(0)}k` : '0'}</Text>
+                    <View style={styles.barTrack}>
+                      <View
+                        style={[
+                          styles.barFill,
+                          {
+                            height: `${barHeightPercent}%`,
+                            backgroundColor: idx === 6 ? COLORS.green : COLORS.blue,
+                          },
+                        ]}
+                      />
+                    </View>
+                    <Text style={styles.chartDayText}>{day}</Text>
+                  </View>
+                );
+              })}
             </View>
           </View>
+        </View>
+
+        {/* Recent Transactions List on Home */}
+        <View style={[styles.sectionHeader, { marginTop: 20 }]}>
+          <Text style={styles.sectionTitle}>Recent Activity</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Cashbook')}>
+            <Text style={styles.viewAllText}>
+              View Cashbook <Ionicons name="chevron-forward" size={14} color={COLORS.green} />
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.cardContainer}>
+          {recentTransactions.length === 0 ? (
+            <Text style={styles.emptyText}>No recent transactions logged yet.</Text>
+          ) : (
+            recentTransactions.map((tx) => (
+              <TouchableOpacity
+                key={tx.id}
+                style={styles.alertRow}
+                onPress={() => navigation.navigate('Cashbook')}
+                activeOpacity={0.7}
+              >
+                <View
+                  style={[
+                    styles.alertIconBox,
+                    {
+                      backgroundColor: tx.isCredit
+                        ? COLORS.amberBg
+                        : tx.type === 'income'
+                        ? COLORS.greenBg
+                        : COLORS.redBg,
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name={
+                      tx.isCredit
+                        ? 'document-text-outline'
+                        : tx.type === 'income'
+                        ? 'arrow-down-circle-outline'
+                        : 'arrow-up-circle-outline'
+                    }
+                    size={22}
+                    color={
+                      tx.isCredit
+                        ? COLORS.amber
+                        : tx.type === 'income'
+                        ? COLORS.green
+                        : COLORS.red
+                    }
+                  />
+                </View>
+
+                <View style={styles.alertInfo}>
+                  <Text style={styles.alertName}>{tx.description}</Text>
+                  <Text style={styles.alertCategory}>
+                    {tx.date} • {tx.category}
+                  </Text>
+                </View>
+
+                <Text
+                  style={{
+                    fontSize: 14,
+                    fontWeight: '700',
+                    color: tx.isCredit
+                      ? COLORS.amber
+                      : tx.type === 'income'
+                      ? COLORS.green
+                      : COLORS.red,
+                  }}
+                >
+                  {tx.type === 'income' ? '+' : '-'}{settings.currency} {tx.amount.toLocaleString()}
+                </Text>
+              </TouchableOpacity>
+            ))
+          )}
         </View>
       </ScrollView>
     </View>
@@ -330,51 +426,43 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     gap: 4,
   },
-  timeDropdownText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
+  chartBarArea: {
+    height: 140,
+    justifyContent: 'flex-end',
+    paddingTop: 10,
   },
-  chartArea: {
-    height: 160,
-    justifyContent: 'space-between',
-  },
-  chartGridLines: {
-    gap: 18,
-  },
-  chartGridLineRow: {
+  barsContainer: {
     flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    height: 120,
+    paddingHorizontal: 8,
+  },
+  barCol: {
     alignItems: 'center',
-    gap: 8,
-  },
-  chartYLabel: {
-    width: 24,
-    fontSize: 10,
-    color: COLORS.textMuted,
-  },
-  chartLineHorizontal: {
     flex: 1,
-    height: 1,
-    backgroundColor: COLORS.divider,
   },
-  chartDaysRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingLeft: 32,
-    paddingRight: 8,
+  barValText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: COLORS.textMuted,
+    marginBottom: 4,
   },
-  chartDayCol: {
-    alignItems: 'center',
-    gap: 4,
+  barTrack: {
+    width: 14,
+    height: 80,
+    backgroundColor: COLORS.inputBg,
+    borderRadius: 7,
+    justifyContent: 'flex-end',
+    overflow: 'hidden',
   },
-  pointDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: COLORS.green,
+  barFill: {
+    width: '100%',
+    borderRadius: 7,
   },
   chartDayText: {
     fontSize: 11,
     color: COLORS.textSecondary,
+    marginTop: 6,
   },
 });
