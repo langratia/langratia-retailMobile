@@ -1,0 +1,271 @@
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useAppStore } from '../store/useAppStore';
+import { COLORS, SHADOWS } from '../theme/theme';
+import { Header } from '../components/Header';
+import { StatCard } from '../components/StatCard';
+import { ProductItemCard } from '../components/ProductItemCard';
+
+export const InventoryScreen = ({ navigation }: any) => {
+  const { products, settings, adjustStock } = useAppStore();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('All');
+
+  // Stats Computations
+  const totalProductsCount = products.length;
+  const totalUnitsCount = products.reduce((acc, p) => acc + p.quantity, 0);
+  const totalInventoryValue = products.reduce(
+    (acc, p) => acc + p.quantity * p.buyPrice,
+    0
+  );
+
+  const filteredProducts = products.filter((p) => {
+    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.category.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = categoryFilter === 'All' || p.category === categoryFilter;
+    return matchesSearch && matchesCategory;
+  });
+
+  return (
+    <View style={styles.container}>
+      <Header
+        title="Inventory"
+        showNotification={false}
+        rightAction={
+          <TouchableOpacity
+            style={styles.headerAddBtn}
+            onPress={() => navigation.navigate('AddEditProduct')}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="add" size={18} color={COLORS.card} />
+            <Text style={styles.headerAddBtnText}>Add Product</Text>
+          </TouchableOpacity>
+        }
+      />
+
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={styles.subHeader}>Manage your products and stock</Text>
+
+        {/* Search Bar & Filter Toggle */}
+        <View style={styles.searchRow}>
+          <View style={styles.searchContainer}>
+            <Ionicons name="search-outline" size={20} color={COLORS.textMuted} style={styles.searchIcon} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search products..."
+              placeholderTextColor={COLORS.textMuted}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+            {searchQuery !== '' && (
+              <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <Ionicons name="close-circle" size={18} color={COLORS.textMuted} />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          <TouchableOpacity style={styles.filterBtn} activeOpacity={0.7}>
+            <Ionicons name="options-outline" size={20} color={COLORS.green} />
+          </TouchableOpacity>
+        </View>
+
+        {/* 3 Metrics Cards Row */}
+        <View style={styles.metricsRow}>
+          <StatCard
+            title="Total Products"
+            value={totalProductsCount.toString()}
+            trendText="Active products"
+            iconName="cube-outline"
+            iconColor={COLORS.blue}
+            iconBgColor={COLORS.blueBg}
+          />
+          <StatCard
+            title="Total Units"
+            value={totalUnitsCount.toString()}
+            trendText="Units in stock"
+            iconName="grid-outline"
+            iconColor={COLORS.green}
+            iconBgColor={COLORS.greenBg}
+          />
+          <StatCard
+            title="Inventory Value"
+            value={`${settings.currency}${totalInventoryValue.toLocaleString('en-US', { minimumFractionDigits: 0 })}`}
+            trendText="Stock value (cost)"
+            iconName="logo-usd"
+            iconColor={COLORS.purple}
+            iconBgColor={COLORS.purpleBg}
+          />
+        </View>
+
+        {/* Products List Header */}
+        <View style={styles.listHeaderRow}>
+          <Text style={styles.listHeaderTitle}>
+            All Products ({filteredProducts.length})
+          </Text>
+          <View style={styles.sortDropdown}>
+            <Text style={styles.sortText}>Sort by: Name</Text>
+            <Ionicons name="chevron-down" size={14} color={COLORS.textSecondary} />
+          </View>
+        </View>
+
+        {/* Products List */}
+        {filteredProducts.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Ionicons name="cube-outline" size={48} color={COLORS.textMuted} />
+            <Text style={styles.emptyTitle}>No Products Found</Text>
+            <Text style={styles.emptySub}>Try adjusting your search query or add a new product.</Text>
+          </View>
+        ) : (
+          filteredProducts.map((product) => (
+            <ProductItemCard
+              key={product.id}
+              product={product}
+              currency={settings.currency}
+              onAddStock={() => adjustStock(product.id, 1)}
+              onRemoveStock={() => adjustStock(product.id, -1)}
+              onEdit={() => navigation.navigate('AddEditProduct', { product })}
+              onPressDetails={() => navigation.navigate('ProductDetails', { productId: product.id })}
+            />
+          ))
+        )}
+      </ScrollView>
+
+      {/* Green Floating Action Button (FAB) */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => navigation.navigate('AddEditProduct')}
+        activeOpacity={0.85}
+      >
+        <Ionicons name="add" size={30} color={COLORS.card} />
+      </TouchableOpacity>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 90,
+  },
+  subHeader: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    marginTop: -8,
+    marginBottom: 16,
+  },
+  headerAddBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.green,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+    gap: 4,
+  },
+  headerAddBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.card,
+  },
+  searchRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 16,
+  },
+  searchContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.inputBg,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 44,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: COLORS.textPrimary,
+  },
+  filterBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: COLORS.card,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.divider,
+  },
+  metricsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 20,
+  },
+  listHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  listHeaderTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+  },
+  sortDropdown: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  sortText: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    fontWeight: '500',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+    marginTop: 12,
+  },
+  emptySub: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  fab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: COLORS.green,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...SHADOWS.fab,
+  },
+});
