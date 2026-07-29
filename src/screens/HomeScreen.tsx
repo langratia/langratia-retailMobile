@@ -72,7 +72,7 @@ export const HomeScreen = ({ navigation }: any) => {
 
   return (
     <View style={styles.container}>
-      <Header title="Business Balance" />
+      <Header title="IVAN A.K.A Electronics" />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}

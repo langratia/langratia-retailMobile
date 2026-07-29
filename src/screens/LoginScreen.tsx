@@ -28,7 +28,7 @@ export const LoginScreen = () => {
           <View style={styles.logoCircle}>
             <Ionicons name="wallet" size={40} color={COLORS.green} />
           </View>
-          <Text style={styles.appName}>Business Balance</Text>
+          <Text style={styles.appName}>IVAN A.K.A Electronics</Text>
           <Text style={styles.appTagline}>
             Track stock, cashflow, and overall business value in one place.
           </Text>

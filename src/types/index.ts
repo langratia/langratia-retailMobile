@@ -1,4 +1,4 @@
-export type ProductCategory = 'Smartphones' | 'Accessories' | 'Electronics' | 'General';
+export type ProductCategory = 'Smartphones' | 'Accessories' | 'Electronics' | 'General' | 'Feature Phones' | 'Audio' | 'Storage' | 'Wearables';
 
 export interface Product {
   id: string;

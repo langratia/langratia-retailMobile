@@ -12,7 +12,7 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({
-  title = 'Business Balance',
+  title = 'IVAN A.K.A Electronics',
   showMenu = true,
   showNotification = true,
   rightAction,

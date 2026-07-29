@@ -35,7 +35,7 @@ export const AddEditProductModal = ({ route, navigation }: any) => {
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const categories: ProductCategory[] = ['Smartphones', 'Accessories', 'Electronics', 'General'];
+  const categories: ProductCategory[] = ['Smartphones', 'Feature Phones', 'Accessories', 'Audio', 'Storage', 'Wearables', 'Electronics', 'General'];
 
   const handleSave = () => {
     if (!name.trim()) {
