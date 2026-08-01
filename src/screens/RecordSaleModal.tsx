@@ -14,11 +14,29 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../store/useAppStore';
 import { COLORS, SHADOWS } from '../theme/theme';
+import { SuccessModal } from '../components/SuccessModal';
 
 export const RecordSaleModal = ({ navigation }: any) => {
   const { products, recordSale, settings } = useAppStore();
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === 'ios' ? insets.top : 8;
+
+  const [showSuccessModal, setShowSuccessModal] = useState<boolean>(false);
+  const [successInfo, setSuccessInfo] = useState<{
+    title: string;
+    subtitle: string;
+    amount: string;
+    badgeText: string;
+    iconName: keyof typeof Ionicons.glyphMap;
+    iconColor: string;
+  }>({
+    title: '',
+    subtitle: '',
+    amount: '',
+    badgeText: '',
+    iconName: 'checkmark-circle',
+    iconColor: COLORS.green,
+  });
 
   // 1. Available Stock Products (Memoized)
   const availableProducts = useMemo(
@@ -113,15 +131,19 @@ export const RecordSaleModal = ({ navigation }: any) => {
       setIsSubmitting(false);
 
       if (success) {
-        Alert.alert(
-          isCredit ? 'Credit Sale Recorded! 📝' : 'Sale Recorded! 🎉',
-          isCredit
-            ? `Sold ${quantitySold} unit(s) to ${customerName} on Credit. Outstanding: ${settings.currency} ${totalSaleAmount.toLocaleString()}.`
-            : `Sold ${quantitySold} unit(s) of ${selectedProduct.name}. Stock updated and cashbook credited with ${settings.currency} ${totalSaleAmount.toLocaleString()}.`,
-          [{ text: 'OK', onPress: () => navigation.goBack() }]
-        );
+        setSuccessInfo({
+          title: isCredit ? 'Credit Sale Logged 📝' : 'Sale Completed! 🎉',
+          subtitle: isCredit
+            ? `Sold ${quantitySold} unit(s) to ${customerName} on Credit.`
+            : `Sold ${quantitySold} unit(s) of ${selectedProduct.name}. Inventory & Cashbook updated!`,
+          amount: `+${settings.currency} ${totalSaleAmount.toLocaleString()}`,
+          badgeText: isCredit ? 'CREDIT DEBT LOGGED' : 'CASHBOOK CREDITED',
+          iconName: isCredit ? 'document-text' : 'checkmark-circle',
+          iconColor: isCredit ? COLORS.amber : COLORS.green,
+        });
+        setShowSuccessModal(true);
       }
-    }, 400);
+    }, 300);
   }, [
     selectedProduct,
     quantitySold,
@@ -407,6 +429,23 @@ export const RecordSaleModal = ({ navigation }: any) => {
           </>
         )}
       </ScrollView>
+
+      {/* Tactile Success Pop Modal */}
+      <SuccessModal
+        visible={showSuccessModal}
+        title={successInfo.title}
+        subtitle={successInfo.subtitle}
+        amount={successInfo.amount}
+        badgeText={successInfo.badgeText}
+        iconName={successInfo.iconName}
+        iconColor={successInfo.iconColor}
+        primaryBtnText="Done"
+        onPrimaryPress={() => navigation.goBack()}
+        onClose={() => {
+          setShowSuccessModal(false);
+          navigation.goBack();
+        }}
+      />
     </View>
   );
 };

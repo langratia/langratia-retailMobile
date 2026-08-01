@@ -15,6 +15,8 @@ import { Header } from '../components/Header';
 import { COLORS, SHADOWS } from '../theme/theme';
 import { useAppStore } from '../store/useAppStore';
 
+import { SuccessModal } from '../components/SuccessModal';
+
 const PRINTERY_SERVICES = [
   { id: 'srv-1', name: 'Photocopying', icon: 'copy-outline' as const, color: COLORS.blue },
   { id: 'srv-2', name: 'Printing', icon: 'print-outline' as const, color: COLORS.purple },
@@ -27,6 +29,12 @@ export const PrinteryScreen = ({ navigation }: any) => {
   const { addTransaction, transactions, settings } = useAppStore();
   const [selectedService, setSelectedService] = useState<typeof PRINTERY_SERVICES[0]>(PRINTERY_SERVICES[0]);
   const [amount, setAmount] = useState('');
+  const [showSuccessModal, setShowSuccessModal] = useState<boolean>(false);
+  const [recordedData, setRecordedData] = useState<{ title: string; subtitle: string; amount: string }>({
+    title: '',
+    subtitle: '',
+    amount: '',
+  });
 
   // Calculate today's total printery income (Memoized)
   const todayPrinteryIncome = useMemo(() => {
@@ -64,18 +72,13 @@ export const PrinteryScreen = ({ navigation }: any) => {
       category: 'Printery Services',
     });
 
-    Alert.alert(
-      'Success! 🎉',
-      `${settings.currency} ${numAmount.toLocaleString()} recorded for ${selectedService.name}.`,
-      [
-        {
-          text: 'OK',
-          onPress: () => {
-            setAmount('');
-          },
-        },
-      ]
-    );
+    setRecordedData({
+      title: `${selectedService.name} Logged! 🎉`,
+      subtitle: `Recorded for ${selectedService.name}. Cashbook credited successfully!`,
+      amount: `+${settings.currency} ${numAmount.toLocaleString()}`,
+    });
+    setShowSuccessModal(true);
+    setAmount('');
   }, [amount, selectedService, addTransaction, settings.currency]);
 
   return (
@@ -200,6 +203,19 @@ export const PrinteryScreen = ({ navigation }: any) => {
           </Pressable>
         </View>
       </ScrollView>
+
+      {/* Tactile Pop Success Modal */}
+      <SuccessModal
+        visible={showSuccessModal}
+        title={recordedData.title}
+        subtitle={recordedData.subtitle}
+        amount={recordedData.amount}
+        badgeText="PRINTERY INFLOW LOGGED 🖨️"
+        iconName="print"
+        iconColor={COLORS.purple}
+        primaryBtnText="Done"
+        onClose={() => setShowSuccessModal(false)}
+      />
     </KeyboardAvoidingView>
   );
 };

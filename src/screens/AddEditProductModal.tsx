@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../store/useAppStore';
 import { ProductCategory } from '../types';
 import { COLORS, SHADOWS } from '../theme/theme';
+import { SuccessModal } from '../components/SuccessModal';
 
 export const AddEditProductModal = ({ route, navigation }: any) => {
   const existingProduct = route.params?.product;
@@ -38,6 +39,12 @@ export const AddEditProductModal = ({ route, navigation }: any) => {
     existingProduct ? existingProduct.quantity.toString() : ''
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successInfo, setSuccessInfo] = useState<{ title: string; subtitle: string; amount: string }>({
+    title: '',
+    subtitle: '',
+    amount: '',
+  });
 
   const categories: ProductCategory[] = [
     'Smartphones',
@@ -108,13 +115,16 @@ export const AddEditProductModal = ({ route, navigation }: any) => {
       }
       setIsSubmitting(false);
 
-      Alert.alert(
-        'Success! 🎉',
-        isEditing ? `${name} updated successfully!` : `${name} added to inventory!`,
-        [{ text: 'OK', onPress: () => navigation.goBack() }]
-      );
-    }, 350);
-  }, [name, buyPrice, sellPrice, quantity, category, isEditing, existingProduct, updateProduct, addProduct, navigation]);
+      setSuccessInfo({
+        title: isEditing ? 'Product Updated! 📦' : 'Stock Item Added! 🎉',
+        subtitle: isEditing
+          ? `${name} profile and inventory pricing updated.`
+          : `${qty} unit(s) of ${name} added to catalog.`,
+        amount: `${settings.currency} ${sPrice.toLocaleString()}`,
+      });
+      setShowSuccessModal(true);
+    }, 250);
+  }, [name, buyPrice, sellPrice, quantity, category, isEditing, existingProduct, updateProduct, addProduct, settings.currency]);
 
   return (
     <View style={[styles.container, { paddingTop: topPadding }]}>
@@ -271,6 +281,23 @@ export const AddEditProductModal = ({ route, navigation }: any) => {
           )}
         </Pressable>
       </ScrollView>
+
+      {/* Tactile Success Pop Modal */}
+      <SuccessModal
+        visible={showSuccessModal}
+        title={successInfo.title}
+        subtitle={successInfo.subtitle}
+        amount={successInfo.amount}
+        badgeText="INVENTORY CATALOG UPDATED 📦"
+        iconName="cube"
+        iconColor={COLORS.blue}
+        primaryBtnText="Done"
+        onPrimaryPress={() => navigation.goBack()}
+        onClose={() => {
+          setShowSuccessModal(false);
+          navigation.goBack();
+        }}
+      />
     </View>
   );
 };

@@ -15,6 +15,8 @@ import { useAppStore } from '../store/useAppStore';
 import { TransactionType } from '../types';
 import { COLORS, SHADOWS } from '../theme/theme';
 
+import { SuccessModal } from '../components/SuccessModal';
+
 const PRESET_AMOUNTS = [5000, 10000, 20000, 50000, 100000];
 
 export const AddTransactionModal = ({ route, navigation }: any) => {
@@ -27,6 +29,13 @@ export const AddTransactionModal = ({ route, navigation }: any) => {
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState(type === 'income' ? 'Sales' : 'Rent');
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successInfo, setSuccessInfo] = useState<{ title: string; subtitle: string; amount: string; isExpense: boolean }>({
+    title: '',
+    subtitle: '',
+    amount: '',
+    isExpense: false,
+  });
 
   const incomeCategories = useMemo(
     () => ['Sales', 'Services', 'Investments', 'Printery Services', 'Other Income'],
@@ -61,8 +70,15 @@ export const AddTransactionModal = ({ route, navigation }: any) => {
       category,
     });
 
-    navigation.goBack();
-  }, [amount, description, type, category, addTransaction, navigation]);
+    const isExp = type === 'expense';
+    setSuccessInfo({
+      title: isExp ? 'Expense Logged 💸' : 'Income Recorded 💵',
+      subtitle: `${description} (${category}) recorded to cashbook.`,
+      amount: `${isExp ? '-' : '+'}${settings.currency} ${numAmount.toLocaleString()}`,
+      isExpense: isExp,
+    });
+    setShowSuccessModal(true);
+  }, [amount, description, type, category, addTransaction, settings.currency]);
 
   return (
     <View style={[styles.container, { paddingTop: topPadding }]}>
@@ -263,6 +279,23 @@ export const AddTransactionModal = ({ route, navigation }: any) => {
           </Text>
         </Pressable>
       </ScrollView>
+
+      {/* Tactile Success Pop Modal */}
+      <SuccessModal
+        visible={showSuccessModal}
+        title={successInfo.title}
+        subtitle={successInfo.subtitle}
+        amount={successInfo.amount}
+        badgeText={successInfo.isExpense ? 'CASHBOOK EXPENSE LOGGED 💸' : 'CASHBOOK INFLOW LOGGED 💵'}
+        iconName={successInfo.isExpense ? 'receipt' : 'cash'}
+        iconColor={successInfo.isExpense ? COLORS.red : COLORS.green}
+        primaryBtnText="Done"
+        onPrimaryPress={() => navigation.goBack()}
+        onClose={() => {
+          setShowSuccessModal(false);
+          navigation.goBack();
+        }}
+      />
     </View>
   );
 };
