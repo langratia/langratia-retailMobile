@@ -75,13 +75,16 @@ export const LoginScreen = () => {
 
         {/* Brand Logo & Splash Banner */}
         <View style={styles.brandBox}>
-          {/* Custom Brand Logo emblem */}
+          {/* Custom Luxury Monogram Brand Emblem for IVAN ELECTRONICS */}
           <View style={styles.logoOuterGlow}>
-            <View style={styles.logoMiddleRing}>
-              <View style={styles.logoInnerCircle}>
-                <Ionicons name="hardware-chip-outline" size={42} color={COLORS.green} />
-                <View style={styles.logoMiniIcon}>
-                  <Ionicons name="flash" size={14} color="#FFF" />
+            <View style={styles.logoShieldFrame}>
+              <View style={styles.logoBadgeInner}>
+                <View style={styles.monogramRow}>
+                  <Text style={styles.monogramLetterI}>I</Text>
+                  <Text style={styles.monogramLetterE}>E</Text>
+                </View>
+                <View style={styles.logoPowerCrown}>
+                  <Ionicons name="flash" size={12} color="#FFFFFF" />
                 </View>
               </View>
             </View>
@@ -91,7 +94,7 @@ export const LoginScreen = () => {
           <View style={styles.techIconsRow}>
             <View style={styles.techPill}>
               <Ionicons name="phone-portrait-outline" size={14} color={COLORS.green} />
-              <Text style={styles.techPillText}>Phones</Text>
+              <Text style={styles.techPillText}>Smartphones</Text>
             </View>
             <View style={styles.techPill}>
               <Ionicons name="headset-outline" size={14} color={COLORS.green} />
@@ -99,7 +102,7 @@ export const LoginScreen = () => {
             </View>
             <View style={styles.techPill}>
               <Ionicons name="laptop-outline" size={14} color={COLORS.green} />
-              <Text style={styles.techPillText}>Gadgets</Text>
+              <Text style={styles.techPillText}>Electronics</Text>
             </View>
           </View>
 
@@ -259,40 +262,63 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   logoOuterGlow: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
+    width: 104,
+    height: 104,
+    borderRadius: 52,
     backgroundColor: 'rgba(16, 185, 129, 0.08)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.2)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(16, 185, 129, 0.25)',
+    ...SHADOWS.medium,
   },
-  logoMiddleRing: {
-    width: 82,
-    height: 82,
-    borderRadius: 41,
+  logoShieldFrame: {
+    width: 88,
+    height: 88,
+    borderRadius: 24,
     backgroundColor: COLORS.greenBg,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
+    borderWidth: 2.5,
     borderColor: COLORS.green,
-    ...SHADOWS.medium,
+    transform: [{ rotate: '45deg' }],
   },
-  logoInnerCircle: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
+  logoBadgeInner: {
+    width: 66,
+    height: 66,
+    borderRadius: 18,
     backgroundColor: COLORS.card,
     alignItems: 'center',
     justifyContent: 'center',
+    transform: [{ rotate: '-45deg' }],
+    borderWidth: 1.5,
+    borderColor: 'rgba(16, 185, 129, 0.3)',
     position: 'relative',
+    ...SHADOWS.small,
   },
-  logoMiniIcon: {
+  monogramRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  monogramLetterI: {
+    fontSize: 28,
+    fontWeight: '900',
+    color: COLORS.green,
+    letterSpacing: -1,
+  },
+  monogramLetterE: {
+    fontSize: 28,
+    fontWeight: '900',
+    color: COLORS.textPrimary,
+    marginLeft: 1,
+    letterSpacing: -1,
+  },
+  logoPowerCrown: {
     position: 'absolute',
-    bottom: -2,
-    right: -2,
+    top: -6,
+    right: -6,
     backgroundColor: COLORS.green,
     width: 22,
     height: 22,
@@ -301,6 +327,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 2,
     borderColor: COLORS.card,
+    ...SHADOWS.small,
   },
   techIconsRow: {
     flexDirection: 'row',

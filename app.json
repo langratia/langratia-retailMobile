@@ -31,6 +31,12 @@
     "plugins": [
       "expo-asset",
       "expo-font"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "f32fc93f-7032-4db6-9e69-18b08edc4c35"
+      }
+    },
+    "owner": "allandevglitch"
   }
 }
