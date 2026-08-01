@@ -16,15 +16,13 @@ interface ActionItem {
 interface QuickActionGridProps {
   onAddStock: () => void;
   onRecordSale: () => void;
-  onAddExpense: () => void;
-  onOpenReports: () => void;
+  onAddExpense?: () => void;
+  onOpenReports?: () => void;
 }
 
 export const QuickActionGrid: React.FC<QuickActionGridProps> = ({
   onAddStock,
   onRecordSale,
-  onAddExpense,
-  onOpenReports,
 }) => {
   const actions: ActionItem[] = [
     {
@@ -44,24 +42,6 @@ export const QuickActionGrid: React.FC<QuickActionGridProps> = ({
       bgColor: COLORS.blueBg,
       onPress: onRecordSale,
       accessibilityHint: 'Navigates to sell screen to process a new sale',
-    },
-    {
-      id: 'add-expense',
-      label: 'Add Expense',
-      icon: 'receipt',
-      color: COLORS.amber,
-      bgColor: COLORS.amberBg,
-      onPress: onAddExpense,
-      accessibilityHint: 'Opens transaction modal to log a business expense',
-    },
-    {
-      id: 'reports',
-      label: 'Reports',
-      icon: 'pie-chart',
-      color: COLORS.purple,
-      bgColor: COLORS.purpleBg,
-      onPress: onOpenReports,
-      accessibilityHint: 'Navigates to detailed business analytics and reports',
     },
   ];
 

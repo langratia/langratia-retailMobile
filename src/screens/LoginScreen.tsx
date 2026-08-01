@@ -70,7 +70,7 @@ export const LoginScreen = () => {
         {/* Top Splash Header Badge */}
         <View style={styles.splashHeaderBadge}>
           <View style={styles.statusDot} />
-          <Text style={styles.splashBadgeText}>CLIENT EDITION • 100% OFFLINE</Text>
+          <Text style={styles.splashBadgeText}>100% OFFLINE RETAIL SYSTEM</Text>
         </View>
 
         {/* Brand Logo & Splash Banner */}
@@ -214,7 +214,7 @@ export const LoginScreen = () => {
         {/* System Footer */}
         <View style={styles.footerInfo}>
           <Text style={styles.footerText}>
-            Powered by IVAN A.K.A Electronics POS • Client Edition
+            Powered by IVAN A.K.A Electronics POS
           </Text>
         </View>
       </ScrollView>
