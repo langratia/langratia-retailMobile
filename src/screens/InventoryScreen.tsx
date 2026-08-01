@@ -130,44 +130,68 @@ export const InventoryScreen = ({ route, navigation }: any) => {
           </Pressable>
         </View>
 
-        {/* 3 Metrics Cards Row */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.metricsRow}
-          style={{ marginBottom: 16 }}
-        >
-          <View style={{ width: 140 }}>
-            <StatCard
-              title="Total Products"
-              value={totalProductsCount.toString()}
-              trendText="Active products"
-              iconName="cube-outline"
-              iconColor={COLORS.blue}
-              iconBgColor={COLORS.blueBg}
-            />
+        {/* Single Consolidated Executive Inventory Hero Card (No Grid, No Horizontal Scroll) */}
+        <View style={styles.inventoryHeroCard}>
+          {/* Top Primary Stock Value Row */}
+          <View style={styles.heroTopRow}>
+            <View style={{ flex: 1, marginRight: 8 }}>
+              <Text style={styles.heroLabel}>TOTAL INVENTORY VALUE</Text>
+              <Text
+                style={styles.heroStockValue}
+                numberOfLines={1}
+                adjustsFontSizeToFit={true}
+                minimumFontScale={0.7}
+              >
+                {settings.currency} {totalInventoryValue.toLocaleString('en-US', { minimumFractionDigits: 0 })}
+              </Text>
+            </View>
+            <View style={styles.heroIconCircle}>
+              <Ionicons name="wallet-outline" size={20} color={COLORS.purple} />
+            </View>
           </View>
-          <View style={{ width: 140 }}>
-            <StatCard
-              title="Total Units"
-              value={totalUnitsCount.toString()}
-              trendText="Units in stock"
-              iconName="grid-outline"
-              iconColor={COLORS.green}
-              iconBgColor={COLORS.greenBg}
-            />
+
+          <View style={styles.heroDivider} />
+
+          {/* 3-Column Metrics Bar (Products • Units • Low Stock) */}
+          <View style={styles.heroStatsRow}>
+            <View style={styles.heroStatCol}>
+              <Text style={styles.heroStatLabel}>Products</Text>
+              <Text style={styles.heroStatVal} numberOfLines={1}>{totalProductsCount}</Text>
+            </View>
+
+            <View style={styles.heroStatDivider} />
+
+            <View style={styles.heroStatCol}>
+              <Text style={styles.heroStatLabel}>Stock Units</Text>
+              <Text style={[styles.heroStatVal, { color: COLORS.green }]} numberOfLines={1}>
+                {totalUnitsCount}
+              </Text>
+            </View>
+
+            <View style={styles.heroStatDivider} />
+
+            <Pressable
+              style={({ pressed }) => [
+                styles.heroStatCol,
+                categoryFilter === 'Low Stock' && styles.lowStockActiveCol,
+                pressed && styles.pressed,
+              ]}
+              onPress={() => setCategoryFilter(categoryFilter === 'Low Stock' ? 'All' : 'Low Stock')}
+              accessibilityRole="button"
+              accessibilityLabel={`Low stock items: ${lowStockCount}. Tap to filter list`}
+            >
+              <View style={styles.lowStockLabelRow}>
+                <Ionicons name="warning-outline" size={12} color={COLORS.amber} />
+                <Text style={[styles.heroStatLabel, { color: COLORS.amber, fontWeight: '700' }]}>
+                  Low Stock
+                </Text>
+              </View>
+              <Text style={[styles.heroStatVal, { color: COLORS.amber }]} numberOfLines={1}>
+                {lowStockCount} {categoryFilter === 'Low Stock' ? '✓' : ''}
+              </Text>
+            </Pressable>
           </View>
-          <View style={{ width: 160 }}>
-            <StatCard
-              title="Inventory Value"
-              value={`${settings.currency}${totalInventoryValue.toLocaleString('en-US', { minimumFractionDigits: 0 })}`}
-              trendText="Stock value (cost)"
-              iconName="logo-usd"
-              iconColor={COLORS.purple}
-              iconBgColor={COLORS.purpleBg}
-            />
-          </View>
-        </ScrollView>
+        </View>
 
         {/* Category & Low Stock Filter Pills */}
         <ScrollView
@@ -357,10 +381,80 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.7,
   },
-  metricsRow: {
+  inventoryHeroCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: COLORS.divider,
+    ...SHADOWS.small,
+  },
+  heroTopRow: {
     flexDirection: 'row',
-    gap: 10,
-    marginBottom: 20,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  heroLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.textMuted,
+    letterSpacing: 0.5,
+    marginBottom: 2,
+  },
+  heroStockValue: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: COLORS.purple,
+  },
+  heroIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: COLORS.purpleBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroDivider: {
+    height: 1,
+    backgroundColor: COLORS.divider,
+    marginVertical: 12,
+  },
+  heroStatsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  heroStatCol: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  lowStockActiveCol: {
+    backgroundColor: COLORS.amberBg,
+  },
+  heroStatDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: COLORS.divider,
+  },
+  heroStatLabel: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    fontWeight: '500',
+    marginBottom: 2,
+  },
+  heroStatVal: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: COLORS.textPrimary,
+  },
+  lowStockLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
   },
   filterChip: {
     paddingHorizontal: 14,
