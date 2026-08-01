@@ -116,14 +116,24 @@ export const ProductDetailsModal = ({ route, navigation }: any) => {
 
           <View style={styles.row}>
             <Text style={styles.rowLabel}>Buying Price (Cost):</Text>
-            <Text style={styles.rowValue}>
+            <Text
+              style={styles.rowValue}
+              numberOfLines={1}
+              adjustsFontSizeToFit={true}
+              minimumFontScale={0.75}
+            >
               {settings.currency}{product.buyPrice.toLocaleString('en-US', { minimumFractionDigits: 2 })}
             </Text>
           </View>
 
           <View style={styles.row}>
             <Text style={styles.rowLabel}>Selling Price:</Text>
-            <Text style={styles.rowValue}>
+            <Text
+              style={styles.rowValue}
+              numberOfLines={1}
+              adjustsFontSizeToFit={true}
+              minimumFontScale={0.75}
+            >
               {settings.currency}{product.sellPrice.toLocaleString('en-US', { minimumFractionDigits: 2 })}
             </Text>
           </View>
@@ -135,6 +145,9 @@ export const ProductDetailsModal = ({ route, navigation }: any) => {
                 styles.rowValue,
                 { color: isLoss ? COLORS.red : COLORS.green },
               ]}
+              numberOfLines={1}
+              adjustsFontSizeToFit={true}
+              minimumFontScale={0.75}
             >
               {marginPerUnit >= 0 ? '+' : ''}{settings.currency}{marginPerUnit.toLocaleString('en-US', { minimumFractionDigits: 2 })}
             </Text>
@@ -142,19 +155,36 @@ export const ProductDetailsModal = ({ route, navigation }: any) => {
 
           <View style={styles.row}>
             <Text style={styles.rowLabel}>Current Quantity:</Text>
-            <Text style={styles.rowValue}>{product.quantity} units</Text>
+            <Text
+              style={styles.rowValue}
+              numberOfLines={1}
+              adjustsFontSizeToFit={true}
+              minimumFontScale={0.75}
+            >
+              {product.quantity} units
+            </Text>
           </View>
 
           <View style={styles.row}>
             <Text style={styles.rowLabel}>Total Stock Value (Cost):</Text>
-            <Text style={[styles.rowValue, { color: COLORS.purple }]}>
+            <Text
+              style={[styles.rowValue, { color: COLORS.purple }]}
+              numberOfLines={1}
+              adjustsFontSizeToFit={true}
+              minimumFontScale={0.75}
+            >
               {settings.currency}{totalCost.toLocaleString('en-US', { minimumFractionDigits: 2 })}
             </Text>
           </View>
 
           <View style={styles.row}>
             <Text style={styles.rowLabel}>Potential Stock Revenue:</Text>
-            <Text style={[styles.rowValue, { color: COLORS.blue }]}>
+            <Text
+              style={[styles.rowValue, { color: COLORS.blue }]}
+              numberOfLines={1}
+              adjustsFontSizeToFit={true}
+              minimumFontScale={0.75}
+            >
               {settings.currency}{totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2 })}
             </Text>
           </View>
@@ -289,11 +319,15 @@ const styles = StyleSheet.create({
   rowLabel: {
     fontSize: 14,
     color: COLORS.textSecondary,
+    flexShrink: 0,
   },
   rowValue: {
     fontSize: 15,
     fontWeight: '700',
     color: COLORS.textPrimary,
+    flexShrink: 1,
+    maxWidth: '60%',
+    textAlign: 'right',
   },
   actionsContainer: {
     flexDirection: 'row',

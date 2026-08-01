@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../store/useAppStore';
 import { COLORS, SHADOWS } from '../theme/theme';
+import { SuccessModal } from '../components/SuccessModal';
 
 const SUPPORTED_CURRENCIES = ['UGX', 'USD', 'KES', 'EUR', 'NGN', 'GHS'];
 
@@ -28,6 +29,15 @@ export const SettingsScreen = ({ navigation }: any) => {
     settings.lowStockThreshold.toString()
   );
   const [securityPin, setSecurityPin] = useState(settings.securityPin || '1234');
+  const [successConfig, setSuccessConfig] = useState<{
+    visible: boolean;
+    title: string;
+    subtitle: string;
+  }>({
+    visible: false,
+    title: '',
+    subtitle: '',
+  });
 
   const handleSave = useCallback(() => {
     const thresholdNum = parseInt(lowStockThreshold, 10);
@@ -48,7 +58,11 @@ export const SettingsScreen = ({ navigation }: any) => {
       lowStockThreshold: thresholdNum,
       securityPin,
     });
-    Alert.alert('Settings Saved! 🎉', 'Your business configuration and 4-digit security PIN have been updated successfully.');
+    setSuccessConfig({
+      visible: true,
+      title: 'Settings Saved! 🎉',
+      subtitle: 'Your business configuration and 4-digit security PIN have been updated successfully.',
+    });
   }, [businessName, ownerName, currency, lowStockThreshold, securityPin, updateSettings]);
 
   const handleResetData = useCallback(() => {
@@ -64,7 +78,11 @@ export const SettingsScreen = ({ navigation }: any) => {
             resetAllData();
             setBusinessName('IVAN A.K.A Electronics');
             setOwnerName('Ivan');
-            Alert.alert('Data Wiped', 'All app data has been reset to a brand new state!');
+            setSuccessConfig({
+              visible: true,
+              title: 'Data Wiped',
+              subtitle: 'All app data has been reset to a brand new state!',
+            });
           },
         },
       ]
@@ -242,6 +260,15 @@ export const SettingsScreen = ({ navigation }: any) => {
           <Text style={styles.logoutText}>Log Out</Text>
         </Pressable>
       </ScrollView>
+
+      <SuccessModal
+        visible={successConfig.visible}
+        title={successConfig.title}
+        subtitle={successConfig.subtitle}
+        onClose={() =>
+          setSuccessConfig((prev) => ({ ...prev, visible: false }))
+        }
+      />
     </View>
   );
 };

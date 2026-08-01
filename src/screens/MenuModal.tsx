@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -12,24 +12,36 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../store/useAppStore';
 import { COLORS, SHADOWS } from '../theme/theme';
+import { SuccessModal } from '../components/SuccessModal';
 
 export const MenuModal = ({ navigation }: any) => {
   const { settings, logout, products, transactions } = useAppStore();
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === 'ios' ? insets.top : 8;
+  const [successConfig, setSuccessConfig] = useState<{
+    visible: boolean;
+    title: string;
+    subtitle: string;
+  }>({
+    visible: false,
+    title: '',
+    subtitle: '',
+  });
 
   const handleExportData = useCallback(() => {
-    Alert.alert(
-      'Export Data',
-      `Data export ready! Total products: ${products.length}, Total transactions: ${transactions.length}. Saved in local offline storage.`
-    );
+    setSuccessConfig({
+      visible: true,
+      title: 'Export Data Ready',
+      subtitle: `Total products: ${products.length}, Total transactions: ${transactions.length}. Saved in local offline storage.`,
+    });
   }, [products.length, transactions.length]);
 
   const handleHelpGuide = useCallback(() => {
-    Alert.alert(
-      'Offline Retail Guide',
-      'This application works 100% offline. All sales, inventory, and transactions are stored directly on your phone/device.'
-    );
+    setSuccessConfig({
+      visible: true,
+      title: 'Offline Retail Guide',
+      subtitle: 'This application works 100% offline. All sales, inventory, and transactions are stored directly on your phone/device.',
+    });
   }, []);
 
   const handleLogout = useCallback(() => {
@@ -194,6 +206,15 @@ export const MenuModal = ({ navigation }: any) => {
           <Text style={styles.versionText}>v1.2.0 • IVAN A.K.A Electronics POS</Text>
         </View>
       </ScrollView>
+
+      <SuccessModal
+        visible={successConfig.visible}
+        title={successConfig.title}
+        subtitle={successConfig.subtitle}
+        onClose={() =>
+          setSuccessConfig((prev) => ({ ...prev, visible: false }))
+        }
+      />
     </View>
   );
 };

@@ -12,12 +12,22 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../store/useAppStore';
 import { COLORS, SHADOWS } from '../theme/theme';
+import { SuccessModal } from '../components/SuccessModal';
 
 export const StatementModal = ({ navigation }: any) => {
   const { transactions, settings } = useAppStore();
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === 'ios' ? insets.top : 8;
   const [filterType, setFilterType] = useState<'all' | 'income' | 'expense' | 'credit'>('all');
+  const [successConfig, setSuccessConfig] = useState<{
+    visible: boolean;
+    title: string;
+    subtitle: string;
+  }>({
+    visible: false,
+    title: '',
+    subtitle: '',
+  });
 
   // 1. Memoized Financial Inflow/Outflow/Net Totals
   const { totalIncome, totalExpenses, netBalance } = useMemo(() => {
@@ -64,10 +74,11 @@ export const StatementModal = ({ navigation }: any) => {
   }, [transactions, filterType]);
 
   const handleExportStatement = useCallback(() => {
-    Alert.alert(
-      'Export Financial Statement',
-      `Financial statement for ${settings.businessName} generated successfully!\nTotal Inflow: ${settings.currency} ${totalIncome.toLocaleString()}\nTotal Outflow: ${settings.currency} ${totalExpenses.toLocaleString()}\nNet Balance: ${settings.currency} ${netBalance.toLocaleString()}`
-    );
+    setSuccessConfig({
+      visible: true,
+      title: 'Export Complete',
+      subtitle: `Financial statement for ${settings.businessName} generated successfully!\nTotal Inflow: ${settings.currency} ${totalIncome.toLocaleString()}\nTotal Outflow: ${settings.currency} ${totalExpenses.toLocaleString()}\nNet Balance: ${settings.currency} ${netBalance.toLocaleString()}`,
+    });
   }, [settings.businessName, settings.currency, totalIncome, totalExpenses, netBalance]);
 
   const renderTableHeader = useMemo(
@@ -310,6 +321,15 @@ export const StatementModal = ({ navigation }: any) => {
         initialNumToRender={15}
         maxToRenderPerBatch={10}
         windowSize={5}
+      />
+
+      <SuccessModal
+        visible={successConfig.visible}
+        title={successConfig.title}
+        subtitle={successConfig.subtitle}
+        onClose={() =>
+          setSuccessConfig((prev) => ({ ...prev, visible: false }))
+        }
       />
     </View>
   );
