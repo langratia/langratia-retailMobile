@@ -105,10 +105,11 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    justifyContent: 'space-between',
+    rowGap: 12,
   },
   actionCard: {
-    width: '48.5%',
+    width: '48%',
     backgroundColor: COLORS.card,
     borderRadius: 16,
     paddingVertical: 14,

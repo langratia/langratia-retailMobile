@@ -21,14 +21,15 @@ export const GlobalSpeedDial = () => {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
 
-  const fabBottom = 72 + Math.max(insets.bottom, 10);
+  // Position FAB comfortably above the bottom navigation bar so it's very easy to tap
+  const fabBottom = 88 + Math.max(insets.bottom, 16);
 
   const toggleMenu = useCallback(() => {
     const toValue = isOpen ? 0 : 1;
     Animated.spring(animation, {
       toValue,
-      friction: 6,
-      tension: 50,
+      friction: 7,
+      tension: 60,
       useNativeDriver: true,
     }).start();
     setIsOpen(!isOpen);
@@ -50,7 +51,7 @@ export const GlobalSpeedDial = () => {
     outputRange: ['0deg', '45deg'],
   });
 
-  // Reusable function to create animated styles for sub-fabs
+  // Vertical straight-line animation offset
   const getSubFabStyle = (index: number) => {
     return {
       opacity: animation,
@@ -58,13 +59,13 @@ export const GlobalSpeedDial = () => {
         {
           translateY: animation.interpolate({
             inputRange: [0, 1],
-            outputRange: [20, -((index + 1) * 65)],
+            outputRange: [0, -((index + 1) * 66)],
           }),
         },
         {
           scale: animation.interpolate({
             inputRange: [0, 1],
-            outputRange: [0.5, 1],
+            outputRange: [0.6, 1],
           }),
         },
       ],
@@ -80,10 +81,14 @@ export const GlobalSpeedDial = () => {
         </TouchableWithoutFeedback>
       )}
 
-      <View style={[styles.container, { bottom: fabBottom }]}>
+      <View style={[styles.container, { bottom: fabBottom }]} pointerEvents="box-none">
         {/* Sub-FAB 3: Add Expense */}
-        <Animated.View style={[styles.subFabContainer, getSubFabStyle(2)]}>
-          <Text style={styles.label}>Add Expense</Text>
+        <Animated.View style={[styles.subFabContainer, getSubFabStyle(2)]} pointerEvents={isOpen ? 'auto' : 'none'}>
+          <Pressable onPress={() => handleAction('AddTransaction', { defaultType: 'expense' })}>
+            <View style={styles.labelBadge}>
+              <Text style={styles.label} numberOfLines={1}>Add Expense</Text>
+            </View>
+          </Pressable>
           <Pressable
             style={({ pressed }) => [
               styles.subFab,
@@ -91,17 +96,21 @@ export const GlobalSpeedDial = () => {
               pressed && styles.pressed,
             ]}
             onPress={() => handleAction('AddTransaction', { defaultType: 'expense' })}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             accessibilityRole="button"
             accessibilityLabel="Add expense transaction"
-            accessibilityHint="Navigates to add expense modal"
           >
-            <Ionicons name="receipt-outline" size={20} color={COLORS.card} />
+            <Ionicons name="receipt-outline" size={22} color={COLORS.card} />
           </Pressable>
         </Animated.View>
 
         {/* Sub-FAB 2: Record Sale */}
-        <Animated.View style={[styles.subFabContainer, getSubFabStyle(1)]}>
-          <Text style={styles.label}>Record Sale</Text>
+        <Animated.View style={[styles.subFabContainer, getSubFabStyle(1)]} pointerEvents={isOpen ? 'auto' : 'none'}>
+          <Pressable onPress={() => handleAction('RecordSale')}>
+            <View style={styles.labelBadge}>
+              <Text style={styles.label} numberOfLines={1}>Record Sale</Text>
+            </View>
+          </Pressable>
           <Pressable
             style={({ pressed }) => [
               styles.subFab,
@@ -109,17 +118,21 @@ export const GlobalSpeedDial = () => {
               pressed && styles.pressed,
             ]}
             onPress={() => handleAction('RecordSale')}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             accessibilityRole="button"
             accessibilityLabel="Record sale checkout"
-            accessibilityHint="Navigates to point of sale checkout modal"
           >
-            <Ionicons name="cart-outline" size={20} color={COLORS.card} />
+            <Ionicons name="cart-outline" size={22} color={COLORS.card} />
           </Pressable>
         </Animated.View>
 
         {/* Sub-FAB 1: Add Stock */}
-        <Animated.View style={[styles.subFabContainer, getSubFabStyle(0)]}>
-          <Text style={styles.label}>Add Stock</Text>
+        <Animated.View style={[styles.subFabContainer, getSubFabStyle(0)]} pointerEvents={isOpen ? 'auto' : 'none'}>
+          <Pressable onPress={() => handleAction('AddEditProduct')}>
+            <View style={styles.labelBadge}>
+              <Text style={styles.label} numberOfLines={1}>Add Stock</Text>
+            </View>
+          </Pressable>
           <Pressable
             style={({ pressed }) => [
               styles.subFab,
@@ -127,24 +140,24 @@ export const GlobalSpeedDial = () => {
               pressed && styles.pressed,
             ]}
             onPress={() => handleAction('AddEditProduct')}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             accessibilityRole="button"
             accessibilityLabel="Add stock product"
-            accessibilityHint="Navigates to add or edit product modal"
           >
-            <Ionicons name="cube-outline" size={20} color={COLORS.card} />
+            <Ionicons name="cube-outline" size={22} color={COLORS.card} />
           </Pressable>
         </Animated.View>
 
-        {/* Main FAB */}
+        {/* Main FAB Button */}
         <Pressable
           style={({ pressed }) => [
             styles.mainFab,
             pressed && styles.mainFabPressed,
           ]}
           onPress={toggleMenu}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           accessibilityRole="button"
           accessibilityLabel={isOpen ? 'Close quick actions menu' : 'Expand quick actions menu'}
-          accessibilityHint="Toggles speed dial quick action buttons"
         >
           <Animated.View style={{ transform: [{ rotate: rotation }] }}>
             <Ionicons name="add" size={32} color={COLORS.card} />
@@ -162,13 +175,12 @@ const styles = StyleSheet.create({
     left: -width,
     width: width * 2,
     height: height * 2,
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    backgroundColor: 'rgba(15, 23, 42, 0.45)',
     zIndex: 10,
   },
   container: {
     position: 'absolute',
-    bottom: 24,
-    right: 24,
+    right: 20,
     alignItems: 'center',
     zIndex: 20,
   },
@@ -179,40 +191,45 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.green,
     alignItems: 'center',
     justifyContent: 'center',
-    ...SHADOWS.fab,
+    ...SHADOWS.medium,
   },
   mainFabPressed: {
     opacity: 0.85,
-    transform: [{ scale: 0.96 }],
+    transform: [{ scale: 0.94 }],
   },
   subFabContainer: {
     position: 'absolute',
     flexDirection: 'row',
     alignItems: 'center',
-    right: 6,
+    right: 4, // 4px offset perfectly centers 52px circle over 60px main FAB
+    justifyContent: 'flex-end',
   },
-  label: {
+  labelBadge: {
     backgroundColor: COLORS.card,
-    color: COLORS.textPrimary,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 8,
-    marginRight: 12,
-    fontSize: 13,
-    fontWeight: '600',
-    overflow: 'hidden',
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: COLORS.divider,
+    maxWidth: 130,
     ...SHADOWS.small,
   },
+  label: {
+    color: COLORS.textPrimary,
+    fontSize: 12,
+    fontWeight: '700',
+  },
   subFab: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
     ...SHADOWS.small,
   },
   pressed: {
     opacity: 0.8,
-    transform: [{ scale: 0.95 }],
+    transform: [{ scale: 0.94 }],
   },
 });
