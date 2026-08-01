@@ -1,21 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TextInput,
-  TouchableOpacity,
+  Pressable,
   Alert,
   ActivityIndicator,
   Platform,
-  StatusBar as RNStatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../store/useAppStore';
 import { ProductCategory } from '../types';
-import { COLORS } from '../theme/theme';
+import { COLORS, SHADOWS } from '../theme/theme';
 
 export const AddEditProductModal = ({ route, navigation }: any) => {
   const existingProduct = route.params?.product;
@@ -40,9 +39,35 @@ export const AddEditProductModal = ({ route, navigation }: any) => {
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const categories: ProductCategory[] = ['Smartphones', 'Feature Phones', 'Accessories', 'Audio', 'Storage', 'Wearables', 'Electronics', 'Printery Services', 'General'];
+  const categories: ProductCategory[] = [
+    'Smartphones',
+    'Feature Phones',
+    'Accessories',
+    'Audio',
+    'Storage',
+    'Wearables',
+    'Electronics',
+    'Printery Services',
+    'General',
+  ];
 
-  const handleSave = () => {
+  // Calculated Profit Margin & Total Stock Value Preview (Memoized)
+  const { unitProfit, totalStockVal, isLoss } = useMemo(() => {
+    const b = parseFloat(buyPrice) || 0;
+    const s = parseFloat(sellPrice) || b;
+    const q = parseInt(quantity, 10) || 0;
+
+    const profit = s - b;
+    const stockVal = b * q;
+
+    return {
+      unitProfit: profit,
+      totalStockVal: stockVal,
+      isLoss: profit < 0,
+    };
+  }, [buyPrice, sellPrice, quantity]);
+
+  const handleSave = useCallback(() => {
     if (!name.trim()) {
       Alert.alert('Validation Error', 'Please enter a product name.');
       return;
@@ -51,8 +76,13 @@ export const AddEditProductModal = ({ route, navigation }: any) => {
     const sPrice = sellPrice.trim() ? parseFloat(sellPrice) : bPrice;
     const qty = parseInt(quantity, 10);
 
-    if (isNaN(bPrice) || isNaN(qty)) {
-      Alert.alert('Validation Error', 'Please enter valid numerical values for Buying Price and Quantity.');
+    if (isNaN(bPrice) || bPrice < 0) {
+      Alert.alert('Validation Error', 'Please enter a valid buying price.');
+      return;
+    }
+
+    if (isNaN(qty) || qty < 0) {
+      Alert.alert('Validation Error', 'Please enter a valid stock quantity.');
       return;
     }
 
@@ -83,22 +113,31 @@ export const AddEditProductModal = ({ route, navigation }: any) => {
         isEditing ? `${name} updated successfully!` : `${name} added to inventory!`,
         [{ text: 'OK', onPress: () => navigation.goBack() }]
       );
-    }, 400);
-  };
+    }, 350);
+  }, [name, buyPrice, sellPrice, quantity, category, isEditing, existingProduct, updateProduct, addProduct, navigation]);
 
   return (
     <View style={[styles.container, { paddingTop: topPadding }]}>
       {/* Modal Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.7}>
+        <Pressable
+          onPress={() => navigation.goBack()}
+          style={({ pressed }) => [styles.closeBtn, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel="Close product modal"
+        >
           <Ionicons name="close-outline" size={26} color={COLORS.textPrimary} />
-        </TouchableOpacity>
+        </Pressable>
         <Text style={styles.headerTitle}>{isEditing ? 'Edit Product' : 'Add New Product'}</Text>
         <View style={{ width: 26 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        {/* Name */}
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Name Input */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Product Name</Text>
           <TextInput
@@ -107,32 +146,39 @@ export const AddEditProductModal = ({ route, navigation }: any) => {
             onChangeText={setName}
             placeholder="e.g. Samsung A16 (128GB)"
             placeholderTextColor={COLORS.textMuted}
+            accessibilityLabel="Product name input"
           />
         </View>
 
-        {/* Category */}
+        {/* Category Chips */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Category</Text>
           <View style={styles.categoryRow}>
-            {categories.map((cat) => (
-              <TouchableOpacity
-                key={cat}
-                style={[
-                  styles.categoryChip,
-                  category === cat && styles.categoryChipActive,
-                ]}
-                onPress={() => setCategory(cat)}
-              >
-                <Text
-                  style={[
-                    styles.categoryText,
-                    category === cat && styles.categoryTextActive,
+            {categories.map((cat) => {
+              const isSelected = category === cat;
+              return (
+                <Pressable
+                  key={cat}
+                  style={({ pressed }) => [
+                    styles.categoryChip,
+                    isSelected && styles.categoryChipActive,
+                    pressed && styles.pressed,
                   ]}
+                  onPress={() => setCategory(cat)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Select category ${cat}`}
                 >
-                  {cat}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                  <Text
+                    style={[
+                      styles.categoryText,
+                      isSelected && styles.categoryTextActive,
+                    ]}
+                  >
+                    {cat}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
         </View>
 
@@ -147,11 +193,12 @@ export const AddEditProductModal = ({ route, navigation }: any) => {
               placeholder="0.00"
               keyboardType="decimal-pad"
               placeholderTextColor={COLORS.textMuted}
+              accessibilityLabel="Buying price input"
             />
           </View>
 
           <View style={[styles.inputGroup, { flex: 1 }]}>
-            <Text style={styles.label}>Default Sell Price (Optional)</Text>
+            <Text style={styles.label}>Sell Price ({settings.currency})</Text>
             <TextInput
               style={styles.input}
               value={sellPrice}
@@ -159,13 +206,14 @@ export const AddEditProductModal = ({ route, navigation }: any) => {
               placeholder="0.00"
               keyboardType="decimal-pad"
               placeholderTextColor={COLORS.textMuted}
+              accessibilityLabel="Selling price input"
             />
           </View>
         </View>
 
-        {/* Quantity */}
+        {/* Quantity Input */}
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Initial Stock Quantity (Units)</Text>
+          <Text style={styles.label}>Stock Quantity (Units)</Text>
           <TextInput
             style={styles.input}
             value={quantity}
@@ -173,37 +221,55 @@ export const AddEditProductModal = ({ route, navigation }: any) => {
             placeholder="0"
             keyboardType="number-pad"
             placeholderTextColor={COLORS.textMuted}
+            accessibilityLabel="Stock quantity input"
           />
         </View>
 
-        {/* Primary Save Button inside form body */}
-        <TouchableOpacity
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: COLORS.green,
-            borderRadius: 14,
-            height: 52,
-            gap: 8,
-            marginTop: 12,
-            opacity: isSubmitting ? 0.7 : 1,
-          }}
+        {/* Profit Preview Card */}
+        {buyPrice !== '' && (
+          <View style={styles.previewCard}>
+            <View style={styles.previewRow}>
+              <Text style={styles.previewLabel}>Estimated Unit Profit:</Text>
+              <Text
+                style={[
+                  styles.previewVal,
+                  { color: isLoss ? COLORS.red : COLORS.green },
+                ]}
+              >
+                {unitProfit >= 0 ? '+' : ''}{settings.currency} {unitProfit.toLocaleString()}
+              </Text>
+            </View>
+            <View style={styles.previewRow}>
+              <Text style={styles.previewLabel}>Total Stock Value:</Text>
+              <Text style={styles.previewVal}>
+                {settings.currency} {totalStockVal.toLocaleString()}
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* Primary Save Button */}
+        <Pressable
+          style={({ pressed }) => [
+            styles.saveBtn,
+            (isSubmitting || pressed) && { opacity: 0.8 },
+          ]}
           onPress={handleSave}
           disabled={isSubmitting}
-          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel={isEditing ? 'Update product' : 'Save product'}
         >
           {isSubmitting ? (
             <ActivityIndicator size="small" color={COLORS.card} />
           ) : (
             <>
               <Ionicons name="checkmark-circle-outline" size={22} color={COLORS.card} />
-              <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.card }}>
+              <Text style={styles.saveBtnText}>
                 {isEditing ? 'Update Product' : 'Save Product'}
               </Text>
             </>
           )}
-        </TouchableOpacity>
+        </Pressable>
       </ScrollView>
     </View>
   );
@@ -224,18 +290,17 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderColor: COLORS.divider,
   },
+  closeBtn: {
+    padding: 4,
+  },
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: COLORS.textPrimary,
   },
-  saveHeaderBtn: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.green,
-  },
   scrollContent: {
     padding: 20,
+    paddingBottom: 40,
   },
   inputGroup: {
     marginBottom: 20,
@@ -263,11 +328,13 @@ const styles = StyleSheet.create({
   },
   categoryChip: {
     paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingVertical: 10,
+    minHeight: 44,
     borderRadius: 20,
     backgroundColor: COLORS.card,
     borderWidth: 1,
     borderColor: COLORS.divider,
+    justifyContent: 'center',
   },
   categoryChipActive: {
     backgroundColor: COLORS.blueBg,
@@ -285,5 +352,45 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     gap: 12,
+  },
+  previewCard: {
+    backgroundColor: COLORS.inputBg,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 20,
+    gap: 8,
+  },
+  previewRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  previewLabel: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+  },
+  previewVal: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+  },
+  saveBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.green,
+    borderRadius: 14,
+    height: 52,
+    gap: 8,
+    marginTop: 8,
+    ...SHADOWS.small,
+  },
+  saveBtnText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.card,
+  },
+  pressed: {
+    opacity: 0.7,
   },
 });

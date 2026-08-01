@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import React, { useMemo, useCallback } from 'react';
+import { View, Text, StyleSheet, Pressable, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,55 +19,75 @@ export const Header: React.FC<HeaderProps> = ({
   showNotification = true,
   rightAction,
 }) => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const { products, settings } = useAppStore();
 
-  const lowStockCount = products.filter((p) => p.quantity <= settings.lowStockThreshold).length;
+  const lowStockCount = useMemo(
+    () => products.filter((p) => p.quantity <= settings.lowStockThreshold).length,
+    [products, settings.lowStockThreshold]
+  );
 
-  const handleNotificationPress = () => {
+  const handleNotificationPress = useCallback(() => {
     if (lowStockCount > 0) {
       Alert.alert(
         '🔔 Business Alerts',
         `You have ${lowStockCount} item(s) running low on stock! Check your Inventory to replenish.`,
         [
-          { text: 'View Inventory', onPress: () => navigation.navigate('Inventory' as never, { filterLowStock: true } as never) },
+          {
+            text: 'View Inventory',
+            onPress: () =>
+              navigation.navigate('Inventory', { filterLowStock: true }),
+          },
           { text: 'Close', style: 'cancel' },
         ]
       );
     } else {
-      Alert.alert('🔔 Business Alerts', 'All stock levels and financial records are up to date!');
+      Alert.alert(
+        '🔔 Business Alerts',
+        'All stock levels and financial records are healthy!'
+      );
     }
-  };
+  }, [lowStockCount, navigation]);
 
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
       <View style={styles.inner}>
         <View style={styles.leftSection}>
           {showMenu && (
-            <TouchableOpacity
-              style={styles.iconBtn}
-              activeOpacity={0.7}
-              onPress={() => navigation.navigate('MenuModal' as never)}
+            <Pressable
+              style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
+              onPress={() => navigation.navigate('MenuModal')}
+              accessibilityRole="button"
+              accessibilityLabel="Open application menu"
+              accessibilityHint="Opens navigation drawer menu"
             >
               <Ionicons name="menu-outline" size={24} color={COLORS.textPrimary} />
-            </TouchableOpacity>
+            </Pressable>
           )}
-          <Text style={styles.title} numberOfLines={1}>{title}</Text>
+          <Text style={styles.title} numberOfLines={1}>
+            {title}
+          </Text>
         </View>
 
         <View style={styles.rightSection}>
           {rightAction}
           {showNotification && (
-            <TouchableOpacity
-              style={styles.iconBtn}
-              activeOpacity={0.7}
+            <Pressable
+              style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
               onPress={handleNotificationPress}
+              accessibilityRole="button"
+              accessibilityLabel={`Business alerts. ${lowStockCount} low stock alerts`}
+              accessibilityHint="Inspects inventory stock alerts"
             >
               <View style={styles.notificationWrapper}>
-                <Ionicons name="notifications-outline" size={22} color={COLORS.textPrimary} />
+                <Ionicons
+                  name="notifications-outline"
+                  size={22}
+                  color={COLORS.textPrimary}
+                />
                 {lowStockCount > 0 && <View style={styles.dot} />}
               </View>
-            </TouchableOpacity>
+            </Pressable>
           )}
         </View>
       </View>
@@ -83,7 +103,7 @@ const styles = StyleSheet.create({
   },
   inner: {
     height: 60,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -106,11 +126,11 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   iconBtn: {
-    width: 38,
-    height: 38,
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 19,
+    borderRadius: 22,
     backgroundColor: COLORS.inputBg,
   },
   notificationWrapper: {
@@ -120,11 +140,14 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 1,
     right: 1,
-    width: 7,
-    height: 7,
+    width: 8,
+    height: 8,
     borderRadius: 4,
     backgroundColor: COLORS.red,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: COLORS.background,
+  },
+  pressed: {
+    opacity: 0.7,
   },
 });

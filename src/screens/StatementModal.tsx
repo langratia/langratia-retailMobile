@@ -1,13 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
-  TouchableOpacity,
+  Pressable,
   Alert,
   Platform,
-  StatusBar as RNStatusBar,
+  FlatList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,61 +19,66 @@ export const StatementModal = ({ navigation }: any) => {
   const topPadding = Platform.OS === 'ios' ? insets.top : 8;
   const [filterType, setFilterType] = useState<'all' | 'income' | 'expense' | 'credit'>('all');
 
-  const filteredTransactions = transactions.filter((tx) => {
-    if (filterType === 'income') return tx.type === 'income' && !tx.isCredit;
-    if (filterType === 'expense') return tx.type === 'expense';
-    if (filterType === 'credit') return tx.isCredit || tx.category === 'Credit Sales';
-    return true;
-  });
+  // 1. Memoized Financial Inflow/Outflow/Net Totals
+  const { totalIncome, totalExpenses, netBalance } = useMemo(() => {
+    const inc = transactions
+      .filter((tx) => tx.type === 'income')
+      .reduce((acc, tx) => acc + tx.amount, 0);
 
-  const totalIncome = transactions
-    .filter((tx) => tx.type === 'income')
-    .reduce((acc, tx) => acc + tx.amount, 0);
+    const exp = transactions
+      .filter((tx) => tx.type === 'expense')
+      .reduce((acc, tx) => acc + tx.amount, 0);
 
-  const totalExpenses = transactions
-    .filter((tx) => tx.type === 'expense')
-    .reduce((acc, tx) => acc + tx.amount, 0);
-
-  const netBalance = totalIncome - totalExpenses;
-
-  // Compute running balance from oldest to newest, then reverse for display
-  const reversedTx = [...filteredTransactions].reverse();
-  let currentRunning = 0;
-  const tableData = reversedTx.map((tx) => {
-    if (tx.type === 'income') {
-      currentRunning += tx.amount;
-    } else {
-      currentRunning -= tx.amount;
-    }
     return {
-      ...tx,
-      runningBalance: currentRunning,
+      totalIncome: inc,
+      totalExpenses: exp,
+      netBalance: inc - exp,
     };
-  }).reverse();
+  }, [transactions]);
 
-  const handleExportStatement = () => {
+  // 2. Memoized Ledger Table Dataset with Running Balances
+  const tableData = useMemo(() => {
+    const filtered = transactions.filter((tx) => {
+      if (filterType === 'income') return tx.type === 'income' && !tx.isCredit;
+      if (filterType === 'expense') return tx.type === 'expense';
+      if (filterType === 'credit') return tx.isCredit || tx.category === 'Credit Sales';
+      return true;
+    });
+
+    // Compute running balance from oldest to newest, then reverse for display
+    const reversed = [...filtered].reverse();
+    let currentRunning = 0;
+    const mapped = reversed.map((tx) => {
+      if (tx.type === 'income') {
+        currentRunning += tx.amount;
+      } else {
+        currentRunning -= tx.amount;
+      }
+      return {
+        ...tx,
+        runningBalance: currentRunning,
+      };
+    });
+
+    return mapped.reverse();
+  }, [transactions, filterType]);
+
+  const handleExportStatement = useCallback(() => {
     Alert.alert(
       'Export Financial Statement',
       `Financial statement for ${settings.businessName} generated successfully!\nTotal Inflow: ${settings.currency} ${totalIncome.toLocaleString()}\nTotal Outflow: ${settings.currency} ${totalExpenses.toLocaleString()}\nNet Balance: ${settings.currency} ${netBalance.toLocaleString()}`
     );
-  };
+  }, [settings.businessName, settings.currency, totalIncome, totalExpenses, netBalance]);
 
-  return (
-    <View style={[styles.container, { paddingTop: topPadding }]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.7}>
-          <Ionicons name="close-outline" size={26} color={COLORS.textPrimary} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Financial Statement</Text>
-        <TouchableOpacity onPress={handleExportStatement} activeOpacity={0.7}>
-          <Ionicons name="share-outline" size={22} color={COLORS.green} />
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+  const renderTableHeader = useMemo(
+    () => (
+      <View style={styles.headerComponentContainer}>
         {/* Statement Summary Card */}
-        <View style={styles.summaryCard}>
+        <View
+          style={styles.summaryCard}
+          accessibilityRole="summary"
+          accessibilityLabel={`Account Statement for ${settings.businessName}. Total Inflow: ${settings.currency} ${totalIncome.toLocaleString()}. Total Outflow: ${settings.currency} ${totalExpenses.toLocaleString()}. Net Balance: ${settings.currency} ${netBalance.toLocaleString()}`}
+        >
           <Text style={styles.businessTitle}>{settings.businessName}</Text>
           <Text style={styles.statementSub}>Account Statement • Currency: {settings.currency}</Text>
 
@@ -99,7 +103,12 @@ export const StatementModal = ({ navigation }: any) => {
 
             <View style={styles.statCol}>
               <Text style={styles.statLabel}>Net Balance</Text>
-              <Text style={[styles.statValue, { color: netBalance >= 0 ? COLORS.green : COLORS.red }]}>
+              <Text
+                style={[
+                  styles.statValue,
+                  { color: netBalance >= 0 ? COLORS.green : COLORS.red },
+                ]}
+              >
                 {settings.currency} {netBalance.toLocaleString()}
               </Text>
             </View>
@@ -114,14 +123,16 @@ export const StatementModal = ({ navigation }: any) => {
             { id: 'expense', label: 'Outflow (-)' },
             { id: 'credit', label: 'Credit (Debt)' },
           ].map((item) => (
-            <TouchableOpacity
+            <Pressable
               key={item.id}
-              style={[
+              style={({ pressed }) => [
                 styles.filterChip,
                 filterType === item.id && styles.filterChipActive,
+                pressed && styles.pressed,
               ]}
               onPress={() => setFilterType(item.id as any)}
-              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={`Filter by ${item.label}`}
             >
               <Text
                 style={[
@@ -131,106 +142,165 @@ export const StatementModal = ({ navigation }: any) => {
               >
                 {item.label}
               </Text>
-            </TouchableOpacity>
+            </Pressable>
           ))}
         </View>
 
-        {/* Tabular Statement Table */}
-        <Text style={styles.tableTitle}>Transaction Ledger Table</Text>
+        {/* Tabular Statement Table Header */}
+        <Text style={styles.tableTitle}>Transaction Ledger Table ({tableData.length})</Text>
 
-        <View style={styles.tableCard}>
-          {/* Table Header Row */}
-          <View style={styles.tableHeaderRow}>
-            <Text style={[styles.thCell, { flex: 2.2 }]}>Date / Item</Text>
-            <Text style={[styles.thCell, { flex: 1.2, textAlign: 'center' }]}>Type</Text>
-            <Text style={[styles.thCell, { flex: 1.8, textAlign: 'right' }]}>Amount</Text>
-            <Text style={[styles.thCell, { flex: 2, textAlign: 'right' }]}>Balance</Text>
-          </View>
-
-          {/* Table Body Rows */}
-          {tableData.length === 0 ? (
-            <View style={styles.emptyRow}>
-              <Text style={styles.emptyText}>No statement records found.</Text>
-            </View>
-          ) : (
-            tableData.map((row, index) => {
-              const isEven = index % 2 === 0;
-              const isIncome = row.type === 'income';
-              const isCredit = row.isCredit;
-
-              const typeColor = isCredit
-                ? COLORS.amber
-                : isIncome
-                ? COLORS.green
-                : COLORS.red;
-
-              return (
-                <View
-                  key={row.id}
-                  style={[
-                    styles.tableBodyRow,
-                    { backgroundColor: isEven ? COLORS.card : COLORS.inputBg },
-                  ]}
-                >
-                  {/* Date & Description */}
-                  <View style={{ flex: 2.2 }}>
-                    <Text style={styles.tdTitle} numberOfLines={1}>
-                      {row.description}
-                    </Text>
-                    <Text style={styles.tdSub}>
-                      {row.date} • {row.time}
-                    </Text>
-                  </View>
-
-                  {/* Type Badge */}
-                  <View style={{ flex: 1.2, alignItems: 'center' }}>
-                    <View
-                      style={[
-                        styles.badge,
-                        {
-                          backgroundColor: isCredit
-                            ? COLORS.amberBg
-                            : isIncome
-                            ? COLORS.greenBg
-                            : COLORS.redBg,
-                        },
-                      ]}
-                    >
-                      <Text style={[styles.badgeText, { color: typeColor }]}>
-                        {isCredit ? 'CREDIT' : isIncome ? 'IN' : 'OUT'}
-                      </Text>
-                    </View>
-                  </View>
-
-                  {/* Amount */}
-                  <View style={{ flex: 1.8, alignItems: 'flex-end' }}>
-                    <Text style={[styles.tdAmount, { color: typeColor }]}>
-                      {isIncome ? '+' : '-'}{row.amount.toLocaleString()}
-                    </Text>
-                  </View>
-
-                  {/* Running Balance */}
-                  <View style={{ flex: 2, alignItems: 'flex-end' }}>
-                    <Text style={styles.tdBalance}>
-                      {settings.currency} {row.runningBalance.toLocaleString()}
-                    </Text>
-                  </View>
-                </View>
-              );
-            })
-          )}
+        <View style={styles.tableHeaderRow}>
+          <Text style={[styles.thCell, { flex: 2.2 }]}>Date / Item</Text>
+          <Text style={[styles.thCell, { flex: 1.2, textAlign: 'center' }]}>Type</Text>
+          <Text style={[styles.thCell, { flex: 1.8, textAlign: 'right' }]}>Amount</Text>
+          <Text style={[styles.thCell, { flex: 2, textAlign: 'right' }]}>Balance</Text>
         </View>
+      </View>
+    ),
+    [
+      settings.businessName,
+      settings.currency,
+      totalIncome,
+      totalExpenses,
+      netBalance,
+      filterType,
+      tableData.length,
+    ]
+  );
 
-        {/* Action Button */}
-        <TouchableOpacity
-          style={styles.exportFullBtn}
+  const renderTableFooter = useMemo(
+    () => (
+      <View style={styles.footerContainer}>
+        <Pressable
+          style={({ pressed }) => [styles.exportFullBtn, pressed && styles.pressedBtn]}
           onPress={handleExportStatement}
-          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel="Export Full Financial Statement"
         >
           <Ionicons name="document-text-outline" size={20} color={COLORS.card} />
           <Text style={styles.exportFullBtnText}>Export Full Statement (CSV/PDF)</Text>
-        </TouchableOpacity>
-      </ScrollView>
+        </Pressable>
+      </View>
+    ),
+    [handleExportStatement]
+  );
+
+  const renderTableRow = useCallback(
+    ({ item: row, index }: { item: any; index: number }) => {
+      const isEven = index % 2 === 0;
+      const isIncome = row.type === 'income';
+      const isCredit = row.isCredit;
+
+      const typeColor = isCredit
+        ? COLORS.amber
+        : isIncome
+        ? COLORS.green
+        : COLORS.red;
+
+      return (
+        <View
+          style={[
+            styles.tableBodyRow,
+            { backgroundColor: isEven ? COLORS.card : COLORS.inputBg },
+          ]}
+          accessibilityRole="text"
+          accessibilityLabel={`${row.description}, ${row.date}, Amount: ${isIncome ? '+' : '-'}${row.amount.toLocaleString()}, Running balance: ${settings.currency} ${row.runningBalance.toLocaleString()}`}
+        >
+          {/* Date & Description */}
+          <View style={{ flex: 2.2 }}>
+            <Text style={styles.tdTitle} numberOfLines={1}>
+              {row.description}
+            </Text>
+            <Text style={styles.tdSub}>
+              {row.date} • {row.time}
+            </Text>
+          </View>
+
+          {/* Type Badge */}
+          <View style={{ flex: 1.2, alignItems: 'center' }}>
+            <View
+              style={[
+                styles.badge,
+                {
+                  backgroundColor: isCredit
+                    ? COLORS.amberBg
+                    : isIncome
+                    ? COLORS.greenBg
+                    : COLORS.redBg,
+                },
+              ]}
+            >
+              <Text style={[styles.badgeText, { color: typeColor }]}>
+                {isCredit ? 'CREDIT' : isIncome ? 'IN' : 'OUT'}
+              </Text>
+            </View>
+          </View>
+
+          {/* Amount */}
+          <View style={{ flex: 1.8, alignItems: 'flex-end' }}>
+            <Text style={[styles.tdAmount, { color: typeColor }]}>
+              {isIncome ? '+' : '-'}{row.amount.toLocaleString()}
+            </Text>
+          </View>
+
+          {/* Running Balance */}
+          <View style={{ flex: 2, alignItems: 'flex-end' }}>
+            <Text style={styles.tdBalance}>
+              {settings.currency} {row.runningBalance.toLocaleString()}
+            </Text>
+          </View>
+        </View>
+      );
+    },
+    [settings.currency]
+  );
+
+  const renderEmptyComponent = useMemo(
+    () => (
+      <View style={styles.emptyRow}>
+        <Ionicons name="receipt-outline" size={32} color={COLORS.textMuted} />
+        <Text style={styles.emptyText}>No statement records found for this filter.</Text>
+      </View>
+    ),
+    []
+  );
+
+  return (
+    <View style={[styles.container, { paddingTop: topPadding }]}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Pressable
+          onPress={() => navigation.goBack()}
+          style={({ pressed }) => [styles.closeBtn, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel="Close statement modal"
+        >
+          <Ionicons name="close-outline" size={26} color={COLORS.textPrimary} />
+        </Pressable>
+        <Text style={styles.headerTitle}>Financial Statement</Text>
+        <Pressable
+          onPress={handleExportStatement}
+          style={({ pressed }) => [styles.closeBtn, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel="Share financial statement"
+        >
+          <Ionicons name="share-outline" size={22} color={COLORS.green} />
+        </Pressable>
+      </View>
+
+      <FlatList
+        data={tableData}
+        keyExtractor={(item) => item.id}
+        renderItem={renderTableRow}
+        ListHeaderComponent={renderTableHeader}
+        ListFooterComponent={renderTableFooter}
+        ListEmptyComponent={renderEmptyComponent}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        initialNumToRender={15}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+      />
     </View>
   );
 };
@@ -250,6 +320,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderColor: COLORS.divider,
   },
+  closeBtn: {
+    padding: 4,
+  },
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
@@ -257,6 +330,10 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
+    paddingBottom: 40,
+  },
+  headerComponentContainer: {
+    marginBottom: 0,
   },
   summaryCard: {
     backgroundColor: COLORS.card,
@@ -307,7 +384,7 @@ const styles = StyleSheet.create({
   },
   filterChip: {
     flex: 1,
-    paddingVertical: 8,
+    minHeight: 44,
     borderRadius: 10,
     backgroundColor: COLORS.card,
     alignItems: 'center',
@@ -320,7 +397,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.green,
   },
   filterChipText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
     color: COLORS.textSecondary,
   },
@@ -334,19 +411,14 @@ const styles = StyleSheet.create({
     color: COLORS.textPrimary,
     marginBottom: 10,
   },
-  tableCard: {
-    backgroundColor: COLORS.card,
-    borderRadius: 14,
-    overflow: 'hidden',
-    marginBottom: 20,
-    ...SHADOWS.small,
-  },
   tableHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.inputBg,
     paddingHorizontal: 12,
     paddingVertical: 10,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
     borderBottomWidth: 1,
     borderColor: COLORS.divider,
   },
@@ -360,7 +432,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 12,
+    minHeight: 48,
     borderBottomWidth: 0.5,
     borderColor: COLORS.divider,
   },
@@ -376,7 +449,7 @@ const styles = StyleSheet.create({
   },
   badge: {
     paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingVertical: 3,
     borderRadius: 6,
   },
   badgeText: {
@@ -393,12 +466,17 @@ const styles = StyleSheet.create({
     color: COLORS.textPrimary,
   },
   emptyRow: {
-    padding: 24,
+    padding: 30,
     alignItems: 'center',
+    gap: 8,
+    backgroundColor: COLORS.card,
   },
   emptyText: {
     fontSize: 13,
     color: COLORS.textSecondary,
+  },
+  footerContainer: {
+    marginTop: 20,
   },
   exportFullBtn: {
     flexDirection: 'row',
@@ -406,13 +484,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: COLORS.green,
     borderRadius: 14,
-    height: 50,
+    height: 52,
     gap: 8,
-    marginBottom: 20,
   },
   exportFullBtnText: {
     fontSize: 15,
     fontWeight: '700',
     color: COLORS.card,
+  },
+  pressedBtn: {
+    opacity: 0.85,
+  },
+  pressed: {
+    opacity: 0.7,
   },
 });

@@ -1,8 +1,8 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import {
   View,
   StyleSheet,
-  TouchableOpacity,
+  Pressable,
   Animated,
   Text,
   TouchableWithoutFeedback,
@@ -18,12 +18,12 @@ const { width, height } = Dimensions.get('window');
 export const GlobalSpeedDial = () => {
   const [isOpen, setIsOpen] = useState(false);
   const animation = useRef(new Animated.Value(0)).current;
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
 
   const fabBottom = 72 + Math.max(insets.bottom, 10);
 
-  const toggleMenu = () => {
+  const toggleMenu = useCallback(() => {
     const toValue = isOpen ? 0 : 1;
     Animated.spring(animation, {
       toValue,
@@ -32,15 +32,17 @@ export const GlobalSpeedDial = () => {
       useNativeDriver: true,
     }).start();
     setIsOpen(!isOpen);
-  };
+  }, [isOpen, animation]);
 
-  const handleAction = (route: string, params?: any) => {
-    toggleMenu(); // close menu
-    // small delay so animation can start before heavy navigation
-    setTimeout(() => {
-      navigation.navigate(route as never, params as never);
-    }, 150);
-  };
+  const handleAction = useCallback(
+    (route: string, params?: any) => {
+      toggleMenu(); // close menu
+      setTimeout(() => {
+        navigation.navigate(route as never, params as never);
+      }, 150);
+    },
+    [toggleMenu, navigation]
+  );
 
   // Interpolate rotation for the main FAB icon (+ to x)
   const rotation = animation.interpolate({
@@ -56,7 +58,7 @@ export const GlobalSpeedDial = () => {
         {
           translateY: animation.interpolate({
             inputRange: [0, 1],
-            outputRange: [20, -((index + 1) * 65)], // Spaces out each sub-fab vertically
+            outputRange: [20, -((index + 1) * 65)],
           }),
         },
         {
@@ -82,45 +84,72 @@ export const GlobalSpeedDial = () => {
         {/* Sub-FAB 3: Add Expense */}
         <Animated.View style={[styles.subFabContainer, getSubFabStyle(2)]}>
           <Text style={styles.label}>Add Expense</Text>
-          <TouchableOpacity
-            style={[styles.subFab, { backgroundColor: COLORS.amber }]}
-            activeOpacity={0.8}
+          <Pressable
+            style={({ pressed }) => [
+              styles.subFab,
+              { backgroundColor: COLORS.amber },
+              pressed && styles.pressed,
+            ]}
             onPress={() => handleAction('AddTransaction', { defaultType: 'expense' })}
+            accessibilityRole="button"
+            accessibilityLabel="Add expense transaction"
+            accessibilityHint="Navigates to add expense modal"
           >
             <Ionicons name="receipt-outline" size={20} color={COLORS.card} />
-          </TouchableOpacity>
+          </Pressable>
         </Animated.View>
 
         {/* Sub-FAB 2: Record Sale */}
         <Animated.View style={[styles.subFabContainer, getSubFabStyle(1)]}>
           <Text style={styles.label}>Record Sale</Text>
-          <TouchableOpacity
-            style={[styles.subFab, { backgroundColor: COLORS.blue }]}
-            activeOpacity={0.8}
+          <Pressable
+            style={({ pressed }) => [
+              styles.subFab,
+              { backgroundColor: COLORS.blue },
+              pressed && styles.pressed,
+            ]}
             onPress={() => handleAction('RecordSale')}
+            accessibilityRole="button"
+            accessibilityLabel="Record sale checkout"
+            accessibilityHint="Navigates to point of sale checkout modal"
           >
             <Ionicons name="cart-outline" size={20} color={COLORS.card} />
-          </TouchableOpacity>
+          </Pressable>
         </Animated.View>
 
         {/* Sub-FAB 1: Add Stock */}
         <Animated.View style={[styles.subFabContainer, getSubFabStyle(0)]}>
           <Text style={styles.label}>Add Stock</Text>
-          <TouchableOpacity
-            style={[styles.subFab, { backgroundColor: COLORS.green }]}
-            activeOpacity={0.8}
+          <Pressable
+            style={({ pressed }) => [
+              styles.subFab,
+              { backgroundColor: COLORS.green },
+              pressed && styles.pressed,
+            ]}
             onPress={() => handleAction('AddEditProduct')}
+            accessibilityRole="button"
+            accessibilityLabel="Add stock product"
+            accessibilityHint="Navigates to add or edit product modal"
           >
             <Ionicons name="cube-outline" size={20} color={COLORS.card} />
-          </TouchableOpacity>
+          </Pressable>
         </Animated.View>
 
         {/* Main FAB */}
-        <TouchableOpacity style={styles.mainFab} activeOpacity={0.9} onPress={toggleMenu}>
+        <Pressable
+          style={({ pressed }) => [
+            styles.mainFab,
+            pressed && styles.mainFabPressed,
+          ]}
+          onPress={toggleMenu}
+          accessibilityRole="button"
+          accessibilityLabel={isOpen ? 'Close quick actions menu' : 'Expand quick actions menu'}
+          accessibilityHint="Toggles speed dial quick action buttons"
+        >
           <Animated.View style={{ transform: [{ rotate: rotation }] }}>
             <Ionicons name="add" size={32} color={COLORS.card} />
           </Animated.View>
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </>
   );
@@ -129,7 +158,7 @@ export const GlobalSpeedDial = () => {
 const styles = StyleSheet.create({
   backdrop: {
     position: 'absolute',
-    top: -height, // Cover full screen above
+    top: -height,
     left: -width,
     width: width * 2,
     height: height * 2,
@@ -138,7 +167,7 @@ const styles = StyleSheet.create({
   },
   container: {
     position: 'absolute',
-    bottom: 24, // Will be contained in a View above the tab bar, so 24 from the bottom of THAT view is fine
+    bottom: 24,
     right: 24,
     alignItems: 'center',
     zIndex: 20,
@@ -152,11 +181,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     ...SHADOWS.fab,
   },
+  mainFabPressed: {
+    opacity: 0.85,
+    transform: [{ scale: 0.96 }],
+  },
   subFabContainer: {
     position: 'absolute',
     flexDirection: 'row',
     alignItems: 'center',
-    right: 6, // center small fab over big fab
+    right: 6,
   },
   label: {
     backgroundColor: COLORS.card,
@@ -177,5 +210,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     ...SHADOWS.small,
+  },
+  pressed: {
+    opacity: 0.8,
+    transform: [{ scale: 0.95 }],
   },
 });

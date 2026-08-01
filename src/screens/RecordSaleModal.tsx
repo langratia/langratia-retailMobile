@@ -1,15 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
+  Pressable,
   Alert,
   TextInput,
   ActivityIndicator,
   Platform,
-  StatusBar as RNStatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,13 +20,32 @@ export const RecordSaleModal = ({ navigation }: any) => {
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === 'ios' ? insets.top : 8;
 
-  const availableProducts = products.filter((p) => p.quantity > 0);
+  // 1. Available Stock Products (Memoized)
+  const availableProducts = useMemo(
+    () => products.filter((p) => p.quantity > 0),
+    [products]
+  );
 
+  const [productSearch, setProductSearch] = useState<string>('');
   const [selectedProductId, setSelectedProductId] = useState<string>(
     availableProducts[0]?.id || ''
   );
+
+  // Filtered available products based on search query
+  const filteredProducts = useMemo(() => {
+    if (!productSearch.trim()) return availableProducts;
+    const q = productSearch.toLowerCase();
+    return availableProducts.filter(
+      (p) => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q)
+    );
+  }, [availableProducts, productSearch]);
+
   const [quantitySold, setQuantitySold] = useState<number>(1);
-  const selectedProduct = products.find((p) => p.id === selectedProductId);
+  const selectedProduct = useMemo(
+    () => products.find((p) => p.id === selectedProductId),
+    [products, selectedProductId]
+  );
+
   const [customPrice, setCustomPrice] = useState<string>(
     selectedProduct ? selectedProduct.sellPrice.toString() : ''
   );
@@ -40,9 +58,24 @@ export const RecordSaleModal = ({ navigation }: any) => {
     if (selectedProduct) {
       setCustomPrice(selectedProduct.sellPrice.toString());
     }
-  }, [selectedProductId]);
+  }, [selectedProductId, selectedProduct]);
 
-  const handleConfirmSale = () => {
+  // Calculations (Memoized)
+  const { currentPriceNum, totalSaleAmount, estimatedProfit } = useMemo(() => {
+    const pNum = parseFloat(customPrice) || 0;
+    const total = selectedProduct ? pNum * quantitySold : 0;
+    const profit = selectedProduct
+      ? (pNum - selectedProduct.buyPrice) * quantitySold
+      : 0;
+
+    return {
+      currentPriceNum: pNum,
+      totalSaleAmount: total,
+      estimatedProfit: profit,
+    };
+  }, [customPrice, selectedProduct, quantitySold]);
+
+  const handleConfirmSale = useCallback(() => {
     if (!selectedProduct) {
       Alert.alert('Error', 'Please select a product to record a sale.');
       return;
@@ -56,8 +89,7 @@ export const RecordSaleModal = ({ navigation }: any) => {
       return;
     }
 
-    const priceNum = parseFloat(customPrice);
-    if (isNaN(priceNum) || priceNum < 0) {
+    if (isNaN(currentPriceNum) || currentPriceNum < 0) {
       Alert.alert('Invalid Price', 'Please enter a valid selling price.');
       return;
     }
@@ -73,7 +105,7 @@ export const RecordSaleModal = ({ navigation }: any) => {
       const success = recordSale(
         selectedProduct.id,
         quantitySold,
-        priceNum,
+        currentPriceNum,
         isCredit,
         customerName,
         customerPhone
@@ -84,32 +116,46 @@ export const RecordSaleModal = ({ navigation }: any) => {
         Alert.alert(
           isCredit ? 'Credit Sale Recorded! 📝' : 'Sale Recorded! 🎉',
           isCredit
-            ? `Sold ${quantitySold} unit(s) to ${customerName} on Credit. Outstanding: ${settings.currency} ${(priceNum * quantitySold).toLocaleString()}.`
-            : `Sold ${quantitySold} unit(s) of ${selectedProduct.name}. Stock updated and cashbook credited with ${settings.currency} ${(priceNum * quantitySold).toLocaleString()}.`,
+            ? `Sold ${quantitySold} unit(s) to ${customerName} on Credit. Outstanding: ${settings.currency} ${totalSaleAmount.toLocaleString()}.`
+            : `Sold ${quantitySold} unit(s) of ${selectedProduct.name}. Stock updated and cashbook credited with ${settings.currency} ${totalSaleAmount.toLocaleString()}.`,
           [{ text: 'OK', onPress: () => navigation.goBack() }]
         );
       }
     }, 400);
-  };
-
-  const currentPriceNum = parseFloat(customPrice) || 0;
-  const totalSaleAmount = selectedProduct ? currentPriceNum * quantitySold : 0;
-  const estimatedProfit = selectedProduct
-    ? (currentPriceNum - selectedProduct.buyPrice) * quantitySold
-    : 0;
+  }, [
+    selectedProduct,
+    quantitySold,
+    currentPriceNum,
+    isCredit,
+    customerName,
+    customerPhone,
+    recordSale,
+    settings.currency,
+    totalSaleAmount,
+    navigation,
+  ]);
 
   return (
     <View style={[styles.container, { paddingTop: topPadding }]}>
       {/* Modal Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.7}>
+        <Pressable
+          onPress={() => navigation.goBack()}
+          style={({ pressed }) => [styles.closeBtn, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel="Close modal"
+        >
           <Ionicons name="close-outline" size={26} color={COLORS.textPrimary} />
-        </TouchableOpacity>
+        </Pressable>
         <Text style={styles.headerTitle}>Record Sale</Text>
         <View style={{ width: 26 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         {availableProducts.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Ionicons name="alert-circle-outline" size={48} color={COLORS.amber} />
@@ -120,173 +166,203 @@ export const RecordSaleModal = ({ navigation }: any) => {
           </View>
         ) : (
           <>
-            {/* Product Selection List */}
+            {/* Product Search & Selection Header */}
             <Text style={styles.label}>Select Product</Text>
-            <View style={styles.productList}>
-              {availableProducts.map((p) => {
-                const isSelected = p.id === selectedProductId;
-                return (
-                  <TouchableOpacity
-                    key={p.id}
-                    style={[
-                      styles.productCard,
-                      isSelected && styles.productCardSelected,
-                    ]}
-                    onPress={() => {
-                      setSelectedProductId(p.id);
-                      setQuantitySold(1);
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <View style={styles.productInfo}>
-                      <Text style={styles.productName}>{p.name}</Text>
-                      <Text style={styles.productSub}>
-                        Unit Price: {settings.currency}{p.sellPrice.toFixed(2)} • {p.quantity} units left
-                      </Text>
-                    </View>
-                    <Ionicons
-                      name={isSelected ? 'checkmark-circle' : 'ellipse-outline'}
-                      size={24}
-                      color={isSelected ? COLORS.green : COLORS.textMuted}
-                    />
-                  </TouchableOpacity>
-                );
-              })}
+
+            <View style={styles.searchBar}>
+              <Ionicons name="search-outline" size={18} color={COLORS.textMuted} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search in-stock products..."
+                placeholderTextColor={COLORS.textMuted}
+                value={productSearch}
+                onChangeText={setProductSearch}
+                accessibilityLabel="Search product list"
+              />
+              {productSearch !== '' && (
+                <Pressable onPress={() => setProductSearch('')}>
+                  <Ionicons name="close-circle" size={18} color={COLORS.textMuted} />
+                </Pressable>
+              )}
             </View>
 
-            {/* Quantity Selector */}
+            {/* Product Selection List */}
+            <View style={styles.productList}>
+              {filteredProducts.length === 0 ? (
+                <Text style={styles.noSearchMatch}>No items match your search.</Text>
+              ) : (
+                filteredProducts.map((p) => {
+                  const isSelected = p.id === selectedProductId;
+                  return (
+                    <Pressable
+                      key={p.id}
+                      style={({ pressed }) => [
+                        styles.productCard,
+                        isSelected && styles.productCardSelected,
+                        pressed && styles.pressed,
+                      ]}
+                      onPress={() => {
+                        setSelectedProductId(p.id);
+                        setQuantitySold(1);
+                      }}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${p.name}, Price: ${settings.currency} ${p.sellPrice}, ${p.quantity} units left`}
+                      accessibilityHint="Selects this product for checkout"
+                    >
+                      <View style={styles.productInfo}>
+                        <Text style={styles.productName}>{p.name}</Text>
+                        <Text style={styles.productSub}>
+                          Unit Price: {settings.currency}{p.sellPrice.toLocaleString()} • {p.quantity} units left
+                        </Text>
+                      </View>
+                      <Ionicons
+                        name={isSelected ? 'checkmark-circle' : 'ellipse-outline'}
+                        size={24}
+                        color={isSelected ? COLORS.green : COLORS.textMuted}
+                      />
+                    </Pressable>
+                  );
+                })
+              )}
+            </View>
+
+            {/* Checkout Section Card */}
             {selectedProduct && (
               <View style={styles.sectionCard}>
+                {/* Custom Sell Price Field */}
                 <View style={{ marginBottom: 16 }}>
                   <Text style={styles.label}>Selling Price per Unit ({settings.currency})</Text>
                   <Text style={{ fontSize: 12, color: COLORS.textMuted, marginBottom: 6 }}>
-                    Buying price: {settings.currency} {selectedProduct.buyPrice}
+                    Default cost: {settings.currency} {selectedProduct.buyPrice.toLocaleString()}
                   </Text>
                   <TextInput
-                    style={{
-                      backgroundColor: COLORS.inputBg,
-                      borderRadius: 10,
-                      paddingHorizontal: 14,
-                      height: 48,
-                      fontSize: 16,
-                      fontWeight: '600',
-                      color: COLORS.textPrimary,
-                      borderWidth: 1,
-                      borderColor: COLORS.divider,
-                    }}
+                    style={styles.priceInput}
                     value={customPrice}
                     onChangeText={setCustomPrice}
                     keyboardType="decimal-pad"
                     placeholder="Enter selling price"
+                    accessibilityLabel="Unit selling price"
                   />
                 </View>
 
+                {/* Payment Mode Selector */}
                 <View style={{ marginBottom: 16 }}>
                   <Text style={styles.label}>Payment Type</Text>
                   <View style={{ flexDirection: 'row', gap: 10 }}>
-                    <TouchableOpacity
-                      style={{
-                        flex: 1,
-                        paddingVertical: 10,
-                        borderRadius: 10,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        backgroundColor: !isCredit ? COLORS.greenBg : COLORS.inputBg,
-                        borderWidth: 1,
-                        borderColor: !isCredit ? COLORS.green : COLORS.divider,
-                      }}
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.paymentModeBtn,
+                        !isCredit ? styles.cashActive : styles.inactiveMode,
+                        pressed && styles.pressed,
+                      ]}
                       onPress={() => setIsCredit(false)}
-                      activeOpacity={0.8}
+                      accessibilityRole="button"
+                      accessibilityLabel="Cash Sale payment mode"
                     >
-                      <Text style={{ fontWeight: '700', color: !isCredit ? COLORS.green : COLORS.textSecondary }}>
+                      <Text
+                        style={[
+                          styles.modeText,
+                          { color: !isCredit ? COLORS.green : COLORS.textSecondary },
+                        ]}
+                      >
                         💵 Cash Sale
                       </Text>
-                    </TouchableOpacity>
+                    </Pressable>
 
-                    <TouchableOpacity
-                      style={{
-                        flex: 1,
-                        paddingVertical: 10,
-                        borderRadius: 10,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        backgroundColor: isCredit ? COLORS.amberBg : COLORS.inputBg,
-                        borderWidth: 1,
-                        borderColor: isCredit ? COLORS.amber : COLORS.divider,
-                      }}
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.paymentModeBtn,
+                        isCredit ? styles.creditActive : styles.inactiveMode,
+                        pressed && styles.pressed,
+                      ]}
                       onPress={() => setIsCredit(true)}
-                      activeOpacity={0.8}
+                      accessibilityRole="button"
+                      accessibilityLabel="Credit Sale payment mode"
                     >
-                      <Text style={{ fontWeight: '700', color: isCredit ? COLORS.amber : COLORS.textSecondary }}>
-                        📝 Credit Sale (Amabanja)
+                      <Text
+                        style={[
+                          styles.modeText,
+                          { color: isCredit ? COLORS.amber : COLORS.textSecondary },
+                        ]}
+                      >
+                        📝 Credit Sale (Debt)
                       </Text>
-                    </TouchableOpacity>
+                    </Pressable>
                   </View>
                 </View>
 
+                {/* Credit Sale Customer Details */}
                 {isCredit && (
                   <View style={{ marginBottom: 16, gap: 10 }}>
                     <View>
                       <Text style={styles.label}>Customer Name *</Text>
                       <TextInput
-                        style={{
-                          backgroundColor: COLORS.inputBg,
-                          borderRadius: 10,
-                          paddingHorizontal: 14,
-                          height: 44,
-                          fontSize: 14,
-                          color: COLORS.textPrimary,
-                          borderWidth: 1,
-                          borderColor: COLORS.divider,
-                        }}
+                        style={styles.textInput}
                         value={customerName}
                         onChangeText={setCustomerName}
                         placeholder="e.g. John Kampala"
+                        placeholderTextColor={COLORS.textMuted}
+                        accessibilityLabel="Customer name"
                       />
                     </View>
                     <View>
                       <Text style={styles.label}>Customer Phone Number (Optional)</Text>
                       <TextInput
-                        style={{
-                          backgroundColor: COLORS.inputBg,
-                          borderRadius: 10,
-                          paddingHorizontal: 14,
-                          height: 44,
-                          fontSize: 14,
-                          color: COLORS.textPrimary,
-                          borderWidth: 1,
-                          borderColor: COLORS.divider,
-                        }}
+                        style={styles.textInput}
                         value={customerPhone}
                         onChangeText={setCustomerPhone}
                         keyboardType="phone-pad"
                         placeholder="e.g. 0770000000"
+                        placeholderTextColor={COLORS.textMuted}
+                        accessibilityLabel="Customer phone number"
                       />
                     </View>
                   </View>
                 )}
 
+                {/* Quantity Stepper & Quick Increment Chips */}
                 <Text style={styles.label}>Quantity Sold</Text>
                 <View style={styles.qtyRow}>
-                  <TouchableOpacity
-                    style={styles.qtyBtn}
+                  <Pressable
+                    style={({ pressed }) => [styles.qtyBtn, pressed && styles.pressed]}
                     onPress={() => setQuantitySold(Math.max(1, quantitySold - 1))}
+                    accessibilityRole="button"
+                    accessibilityLabel="Decrease quantity"
                   >
                     <Ionicons name="remove" size={20} color={COLORS.textPrimary} />
-                  </TouchableOpacity>
+                  </Pressable>
 
                   <Text style={styles.qtyText}>{quantitySold}</Text>
 
-                  <TouchableOpacity
-                    style={styles.qtyBtn}
+                  <Pressable
+                    style={({ pressed }) => [styles.qtyBtn, pressed && styles.pressed]}
                     onPress={() =>
                       setQuantitySold(
                         Math.min(selectedProduct.quantity, quantitySold + 1)
                       )
                     }
+                    accessibilityRole="button"
+                    accessibilityLabel="Increase quantity"
                   >
                     <Ionicons name="add" size={20} color={COLORS.textPrimary} />
-                  </TouchableOpacity>
+                  </Pressable>
+                </View>
+
+                {/* Quick Quantity Presets */}
+                <View style={styles.qtyPresetRow}>
+                  {[1, 2, 5].map((addQty) => (
+                    <Pressable
+                      key={addQty}
+                      style={({ pressed }) => [styles.qtyChip, pressed && styles.pressed]}
+                      onPress={() =>
+                        setQuantitySold(Math.min(selectedProduct.quantity, addQty))
+                      }
+                      accessibilityRole="button"
+                      accessibilityLabel={`Set quantity to ${addQty}`}
+                    >
+                      <Text style={styles.qtyChipText}>Set to {addQty}</Text>
+                    </Pressable>
+                  ))}
                 </View>
 
                 {/* Calculation Summary Box */}
@@ -294,24 +370,28 @@ export const RecordSaleModal = ({ navigation }: any) => {
                   <View style={styles.summaryRow}>
                     <Text style={styles.summaryLabel}>Total Sale Amount:</Text>
                     <Text style={styles.summaryValue}>
-                      {settings.currency}{totalSaleAmount.toFixed(2)}
+                      {settings.currency}{totalSaleAmount.toLocaleString('en-US', { minimumFractionDigits: 0 })}
                     </Text>
                   </View>
 
                   <View style={styles.summaryRow}>
                     <Text style={styles.summaryLabel}>Estimated Net Profit:</Text>
                     <Text style={[styles.summaryValue, { color: COLORS.green }]}>
-                      +{settings.currency}{estimatedProfit.toFixed(2)}
+                      +{settings.currency}{estimatedProfit.toLocaleString('en-US', { minimumFractionDigits: 0 })}
                     </Text>
                   </View>
                 </View>
 
                 {/* Confirm Sale Button */}
-                <TouchableOpacity
-                  style={[styles.confirmBtn, isSubmitting && { opacity: 0.7 }]}
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.confirmBtn,
+                    (isSubmitting || pressed) && { opacity: 0.8 },
+                  ]}
                   onPress={handleConfirmSale}
                   disabled={isSubmitting}
-                  activeOpacity={0.8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Complete sale transaction"
                 >
                   {isSubmitting ? (
                     <ActivityIndicator size="small" color={COLORS.card} />
@@ -321,7 +401,7 @@ export const RecordSaleModal = ({ navigation }: any) => {
                       <Text style={styles.confirmBtnText}>Complete Sale</Text>
                     </>
                   )}
-                </TouchableOpacity>
+                </Pressable>
               </View>
             )}
           </>
@@ -346,6 +426,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderColor: COLORS.divider,
   },
+  closeBtn: {
+    padding: 4,
+  },
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
@@ -353,16 +436,39 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
+    paddingBottom: 110,
   },
   label: {
     fontSize: 14,
     fontWeight: '700',
     color: COLORS.textPrimary,
+    marginBottom: 8,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.inputBg,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 44,
     marginBottom: 12,
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: COLORS.textPrimary,
+  },
+  noSearchMatch: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    paddingVertical: 12,
   },
   productList: {
-    gap: 10,
+    gap: 8,
     marginBottom: 24,
+    maxHeight: 260,
   },
   productCard: {
     flexDirection: 'row',
@@ -370,6 +476,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.card,
     borderRadius: 14,
     padding: 14,
+    minHeight: 52,
     borderWidth: 1,
     borderColor: COLORS.divider,
   },
@@ -396,31 +503,95 @@ const styles = StyleSheet.create({
     padding: 18,
     ...SHADOWS.small,
   },
+  priceInput: {
+    backgroundColor: COLORS.inputBg,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    height: 48,
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+    borderWidth: 1,
+    borderColor: COLORS.divider,
+  },
+  textInput: {
+    backgroundColor: COLORS.inputBg,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    height: 44,
+    fontSize: 14,
+    color: COLORS.textPrimary,
+    borderWidth: 1,
+    borderColor: COLORS.divider,
+  },
+  paymentModeBtn: {
+    flex: 1,
+    height: 46,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  cashActive: {
+    backgroundColor: COLORS.greenBg,
+    borderColor: COLORS.green,
+  },
+  creditActive: {
+    backgroundColor: COLORS.amberBg,
+    borderColor: COLORS.amber,
+  },
+  inactiveMode: {
+    backgroundColor: COLORS.inputBg,
+    borderColor: COLORS.divider,
+  },
+  modeText: {
+    fontWeight: '700',
+    fontSize: 13,
+  },
   qtyRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 20,
-    marginVertical: 12,
+    marginVertical: 10,
   },
   qtyBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: COLORS.inputBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
   qtyText: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: 24,
+    fontWeight: '800',
     color: COLORS.textPrimary,
+  },
+  qtyPresetRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 16,
+  },
+  qtyChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: COLORS.inputBg,
+    borderWidth: 1,
+    borderColor: COLORS.divider,
+  },
+  qtyChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
   },
   summaryBox: {
     backgroundColor: COLORS.background,
     borderRadius: 12,
     padding: 14,
-    marginVertical: 16,
+    marginBottom: 16,
     gap: 8,
   },
   summaryRow: {
@@ -466,5 +637,8 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     textAlign: 'center',
     marginTop: 6,
+  },
+  pressed: {
+    opacity: 0.8,
   },
 });

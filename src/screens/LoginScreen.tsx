@@ -1,13 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  KeyboardAvoidingView,
+  Pressable,
   Platform,
-  StatusBar as RNStatusBar,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,19 +13,53 @@ import { useAppStore } from '../store/useAppStore';
 import { COLORS, SHADOWS } from '../theme/theme';
 
 export const LoginScreen = () => {
-  const { login } = useAppStore();
+  const { login, settings } = useAppStore();
   const insets = useSafeAreaInsets();
-  const topPadding = Platform.OS === 'ios' ? insets.top : 8;
-  const [username, setUsername] = useState('ahmed@retail.com');
-  const [password, setPassword] = useState('••••••••');
+  const topPadding = Platform.OS === 'ios' ? insets.top + 20 : 28;
+
+  const [pin, setPin] = useState<string>('');
+
+  const handleKeyPress = useCallback(
+    (digit: string) => {
+      if (pin.length < 4) {
+        const nextPin = pin + digit;
+        setPin(nextPin);
+        if (nextPin.length === 4) {
+          // Auto unlock after 4 digits
+          setTimeout(() => {
+            login();
+          }, 150);
+        }
+      }
+    },
+    [pin, login]
+  );
+
+  const handleDelete = useCallback(() => {
+    if (pin.length > 0) {
+      setPin(pin.slice(0, -1));
+    }
+  }, [pin]);
+
+  const handleBiometricAuth = useCallback(() => {
+    Alert.alert(
+      'Biometric Authentication',
+      `Unlocking ${settings.businessName} via Fingerprint / Face ID...`,
+      [
+        {
+          text: 'Unlock',
+          onPress: () => login(),
+        },
+      ]
+    );
+  }, [settings.businessName, login]);
 
   return (
-    <KeyboardAvoidingView
+    <View
       style={[
         styles.container,
-        { paddingTop: topPadding, paddingBottom: Math.max(insets.bottom, 16) },
+        { paddingTop: topPadding, paddingBottom: Math.max(insets.bottom, 20) },
       ]}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={styles.content}>
         {/* Brand Icon & Name */}
@@ -35,53 +67,107 @@ export const LoginScreen = () => {
           <View style={styles.logoCircle}>
             <Ionicons name="wallet" size={40} color={COLORS.green} />
           </View>
-          <Text style={styles.appName}>IVAN A.K.A Electronics</Text>
+          <Text style={styles.appName}>{settings.businessName || 'IVAN A.K.A Electronics'}</Text>
           <Text style={styles.appTagline}>
-            Track stock, cashflow, and overall business value in one place.
+            Enter 4-digit Application PIN or use Biometrics to unlock
           </Text>
         </View>
 
-        {/* Login Form */}
-        <View style={styles.formCard}>
-          <Text style={styles.formTitle}>Welcome Back</Text>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Email / Username</Text>
-            <View style={styles.inputWrapper}>
-              <Ionicons name="mail-outline" size={20} color={COLORS.textMuted} style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                value={username}
-                onChangeText={setUsername}
-                placeholder="Enter email"
-                placeholderTextColor={COLORS.textMuted}
-                autoCapitalize="none"
+        {/* PIN Indicator Dots */}
+        <View style={styles.pinIndicatorRow}>
+          {[0, 1, 2, 3].map((idx) => {
+            const isFilled = pin.length > idx;
+            return (
+              <View
+                key={idx}
+                style={[
+                  styles.pinDot,
+                  isFilled && styles.pinDotFilled,
+                ]}
               />
-            </View>
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Password</Text>
-            <View style={styles.inputWrapper}>
-              <Ionicons name="lock-closed-outline" size={20} color={COLORS.textMuted} style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                value={password}
-                onChangeText={setPassword}
-                placeholder="Enter password"
-                placeholderTextColor={COLORS.textMuted}
-                secureTextEntry
-              />
-            </View>
-          </View>
-
-          <TouchableOpacity style={styles.loginBtn} onPress={login} activeOpacity={0.85}>
-            <Text style={styles.loginBtnText}>Log In</Text>
-            <Ionicons name="arrow-forward" size={20} color={COLORS.card} />
-          </TouchableOpacity>
+            );
+          })}
         </View>
+
+        {/* 3x4 Numeric Keypad */}
+        <View style={styles.keypadGrid}>
+          {[['1', '2', '3'], ['4', '5', '6'], ['7', '8', '9']].map((row, rIdx) => (
+            <View key={rIdx} style={styles.keypadRow}>
+              {row.map((num) => (
+                <Pressable
+                  key={num}
+                  style={({ pressed }) => [
+                    styles.keyBtn,
+                    pressed && styles.keyBtnPressed,
+                  ]}
+                  onPress={() => handleKeyPress(num)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Keypad digit ${num}`}
+                >
+                  <Text style={styles.keyText}>{num}</Text>
+                </Pressable>
+              ))}
+            </View>
+          ))}
+
+          {/* Bottom Keypad Row: Biometric, 0, Backspace */}
+          <View style={styles.keypadRow}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.keyBtn,
+                styles.iconKeyBtn,
+                pressed && styles.keyBtnPressed,
+              ]}
+              onPress={handleBiometricAuth}
+              accessibilityRole="button"
+              accessibilityLabel="Unlock with Fingerprint or Face ID"
+              accessibilityHint="Triggers device biometric security unlock"
+            >
+              <Ionicons name="finger-print-outline" size={28} color={COLORS.green} />
+            </Pressable>
+
+            <Pressable
+              style={({ pressed }) => [
+                styles.keyBtn,
+                pressed && styles.keyBtnPressed,
+              ]}
+              onPress={() => handleKeyPress('0')}
+              accessibilityRole="button"
+              accessibilityLabel="Keypad digit 0"
+            >
+              <Text style={styles.keyText}>0</Text>
+            </Pressable>
+
+            <Pressable
+              style={({ pressed }) => [
+                styles.keyBtn,
+                styles.iconKeyBtn,
+                pressed && styles.keyBtnPressed,
+              ]}
+              onPress={handleDelete}
+              accessibilityRole="button"
+              accessibilityLabel="Backspace digit"
+            >
+              <Ionicons name="backspace-outline" size={24} color={COLORS.textSecondary} />
+            </Pressable>
+          </View>
+        </View>
+
+        {/* Quick Direct Unlock Option */}
+        <Pressable
+          style={({ pressed }) => [
+            styles.quickUnlockBtn,
+            pressed && styles.quickUnlockPressed,
+          ]}
+          onPress={login}
+          accessibilityRole="button"
+          accessibilityLabel="Quick unlock app"
+        >
+          <Ionicons name="lock-open-outline" size={18} color={COLORS.green} />
+          <Text style={styles.quickUnlockText}>Quick Unlock</Text>
+        </Pressable>
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 };
 
@@ -92,85 +178,105 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   content: {
-    paddingHorizontal: 24,
+    paddingHorizontal: 28,
+    alignItems: 'center',
   },
   brandBox: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 24,
   },
   logoCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 76,
+    height: 76,
+    borderRadius: 38,
     backgroundColor: COLORS.greenBg,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#A7F3D0',
+    marginBottom: 14,
+    borderWidth: 1.5,
+    borderColor: COLORS.green,
+    ...SHADOWS.small,
   },
   appName: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '800',
     color: COLORS.textPrimary,
     marginBottom: 6,
+    textAlign: 'center',
   },
   appTagline: {
-    fontSize: 14,
+    fontSize: 13,
     color: COLORS.textSecondary,
     textAlign: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
   },
-  formCard: {
-    backgroundColor: COLORS.card,
-    borderRadius: 20,
-    padding: 24,
-    ...SHADOWS.medium,
-  },
-  formTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: COLORS.textPrimary,
-    marginBottom: 20,
-  },
-  inputGroup: {
-    marginBottom: 18,
-  },
-  label: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
-    marginBottom: 6,
-  },
-  inputWrapper: {
+  pinIndicatorRow: {
     flexDirection: 'row',
+    gap: 16,
+    marginBottom: 32,
     alignItems: 'center',
+  },
+  pinDot: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
     backgroundColor: COLORS.inputBg,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    height: 50,
+    borderWidth: 1.5,
+    borderColor: COLORS.divider,
   },
-  inputIcon: {
-    marginRight: 10,
+  pinDotFilled: {
+    backgroundColor: COLORS.green,
+    borderColor: COLORS.green,
   },
-  input: {
-    flex: 1,
-    fontSize: 15,
-    color: COLORS.textPrimary,
+  keypadGrid: {
+    gap: 14,
+    marginBottom: 24,
+    width: '100%',
+    maxWidth: 280,
   },
-  loginBtn: {
+  keypadRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  keyBtn: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: COLORS.card,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.green,
-    borderRadius: 14,
-    height: 52,
-    marginTop: 10,
-    gap: 8,
+    borderWidth: 1,
+    borderColor: COLORS.divider,
+    ...SHADOWS.small,
   },
-  loginBtnText: {
-    fontSize: 16,
+  iconKeyBtn: {
+    backgroundColor: COLORS.card,
+  },
+  keyBtnPressed: {
+    backgroundColor: COLORS.greenBg,
+    borderColor: COLORS.green,
+    transform: [{ scale: 0.95 }],
+  },
+  keyText: {
+    fontSize: 22,
     fontWeight: '700',
-    color: COLORS.card,
+    color: COLORS.textPrimary,
+  },
+  quickUnlockBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: COLORS.greenBg,
+  },
+  quickUnlockPressed: {
+    opacity: 0.7,
+  },
+  quickUnlockText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.green,
   },
 });

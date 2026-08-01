@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
+  Pressable,
+  FlatList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '../store/useAppStore';
@@ -12,69 +13,74 @@ import { COLORS, SHADOWS } from '../theme/theme';
 import { Header } from '../components/Header';
 import { StatCard } from '../components/StatCard';
 import { TransactionItemCard } from '../components/TransactionItemCard';
+import { Transaction } from '../types';
 
 export const CashbookScreen = ({ navigation }: any) => {
   const { transactions, settings } = useAppStore();
   const [selectedFilter, setSelectedFilter] = useState('All Transactions');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'amount'>('newest');
 
-  const toggleSort = () => {
+  const toggleSort = useCallback(() => {
     if (sortBy === 'newest') setSortBy('oldest');
     else if (sortBy === 'oldest') setSortBy('amount');
     else setSortBy('newest');
-  };
+  }, [sortBy]);
 
-  const totalIncome = transactions
-    .filter((tx) => tx.type === 'income')
-    .reduce((acc, tx) => acc + tx.amount, 0);
+  // 1. Financial Computations (Memoized)
+  const { totalIncome, totalExpenses, cashBalance, incomeCount, expenseCount } = useMemo(() => {
+    const incTxs = transactions.filter((tx) => tx.type === 'income');
+    const expTxs = transactions.filter((tx) => tx.type === 'expense');
 
-  const totalExpenses = transactions
-    .filter((tx) => tx.type === 'expense')
-    .reduce((acc, tx) => acc + tx.amount, 0);
+    const inc = incTxs.reduce((acc, tx) => acc + tx.amount, 0);
+    const exp = expTxs.reduce((acc, tx) => acc + tx.amount, 0);
 
-  const cashBalance = totalIncome - totalExpenses;
+    return {
+      totalIncome: inc,
+      totalExpenses: exp,
+      cashBalance: inc - exp,
+      incomeCount: incTxs.length,
+      expenseCount: expTxs.length,
+    };
+  }, [transactions]);
 
-  const todayFormatted = new Date().toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
+  // 2. Filtered & Sorted Transactions (Memoized)
+  const sortedTransactions = useMemo(() => {
+    const todayFormatted = new Date().toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
 
-  const filteredTransactions = transactions.filter((tx) => {
-    if (selectedFilter === 'Credit Sales') return tx.isCredit || tx.category === 'Credit Sales';
-    if (selectedFilter === 'Income') return tx.type === 'income';
-    if (selectedFilter === 'Expense') return tx.type === 'expense';
-    if (selectedFilter === 'Today') return tx.date === 'Today' || tx.date === todayFormatted;
-    return true;
-  });
+    const filtered = transactions.filter((tx) => {
+      if (selectedFilter === 'Credit Sales') return tx.isCredit || tx.category === 'Credit Sales';
+      if (selectedFilter === 'Income') return tx.type === 'income';
+      if (selectedFilter === 'Expense') return tx.type === 'expense';
+      if (selectedFilter === 'Today') return tx.date === 'Today' || tx.date === todayFormatted;
+      return true;
+    });
 
-  const sortedTransactions = [...filteredTransactions].sort((a, b) => {
-    if (sortBy === 'amount') return b.amount - a.amount;
-    if (sortBy === 'oldest') return a.id.localeCompare(b.id);
-    return b.id.localeCompare(a.id);
-  });
+    return [...filtered].sort((a, b) => {
+      if (sortBy === 'amount') return b.amount - a.amount;
+      if (sortBy === 'oldest') return a.id.localeCompare(b.id);
+      return b.id.localeCompare(a.id);
+    });
+  }, [transactions, selectedFilter, sortBy]);
 
-  return (
-    <View style={styles.container}>
-      <Header
-        title="Cash Book"
-        showNotification={true}
-        rightAction={
-          <TouchableOpacity
-            style={styles.exportBtn}
-            activeOpacity={0.7}
-            onPress={() => navigation.navigate('StatementModal')}
-          >
-            <Ionicons name="document-text-outline" size={16} color={COLORS.green} />
-            <Text style={styles.exportText}>Statement</Text>
-          </TouchableOpacity>
-        }
+  const renderTransactionItem = useCallback(
+    ({ item, index }: { item: Transaction; index: number }) => (
+      <TransactionItemCard
+        transaction={item}
+        currency={settings.currency}
+        isLastItem={index === sortedTransactions.length - 1}
+        onPress={() => navigation.navigate('StatementModal')}
       />
+    ),
+    [settings.currency, sortedTransactions.length, navigation]
+  );
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+  const renderListHeader = useMemo(
+    () => (
+      <View style={styles.headerComponentContainer}>
         <Text style={styles.subHeader}>Track all your money in and out</Text>
 
         {/* 3 Stat Cards Row */}
@@ -98,7 +104,7 @@ export const CashbookScreen = ({ navigation }: any) => {
             <StatCard
               title="Total Income"
               value={`${settings.currency}${totalIncome.toLocaleString('en-US', { minimumFractionDigits: 0 })}`}
-              trendText={`${transactions.filter(t => t.type === 'income').length} Income entries`}
+              trendText={`${incomeCount} Income entries`}
               iconName="download-outline"
               iconColor={COLORS.blue}
               iconBgColor={COLORS.blueBg}
@@ -108,7 +114,7 @@ export const CashbookScreen = ({ navigation }: any) => {
             <StatCard
               title="Total Expenses"
               value={`${settings.currency}${totalExpenses.toLocaleString('en-US', { minimumFractionDigits: 0 })}`}
-              trendText={`${transactions.filter(t => t.type === 'expense').length} Expense entries`}
+              trendText={`${expenseCount} Expense entries`}
               iconName="arrow-up-circle-outline"
               iconColor={COLORS.red}
               iconBgColor={COLORS.redBg}
@@ -116,7 +122,7 @@ export const CashbookScreen = ({ navigation }: any) => {
           </View>
         </ScrollView>
 
-        {/* Date Filter Pills */}
+        {/* Date / Type Filter Pills */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -125,14 +131,16 @@ export const CashbookScreen = ({ navigation }: any) => {
           {['All Transactions', 'Income', 'Expense', 'Credit Sales', 'Today'].map((filter) => {
             const isActive = selectedFilter === filter;
             return (
-              <TouchableOpacity
+              <Pressable
                 key={filter}
-                style={[
+                style={({ pressed }) => [
                   styles.filterPill,
                   isActive && styles.filterPillActive,
+                  pressed && styles.pressed,
                 ]}
                 onPress={() => setSelectedFilter(filter)}
-                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel={`Filter by ${filter}`}
               >
                 <Ionicons
                   name="calendar-outline"
@@ -147,45 +155,96 @@ export const CashbookScreen = ({ navigation }: any) => {
                 >
                   {filter}
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             );
           })}
 
-          <TouchableOpacity style={styles.filterIconBtn} onPress={toggleSort} activeOpacity={0.7}>
+          <Pressable
+            style={({ pressed }) => [styles.filterIconBtn, pressed && styles.pressed]}
+            onPress={toggleSort}
+            accessibilityRole="button"
+            accessibilityLabel={`Sort by ${sortBy}`}
+            accessibilityHint="Toggles sorting between newest, oldest, and highest amount"
+          >
             <Ionicons name="options-outline" size={18} color={COLORS.green} />
-          </TouchableOpacity>
+          </Pressable>
         </ScrollView>
 
-        {/* Transactions List Card Container */}
-        <View style={styles.listContainer}>
-          <View style={styles.listHeaderRow}>
-            <Text style={styles.listTitle}>All Transactions</Text>
-            <TouchableOpacity style={styles.sortDropdown} onPress={toggleSort} activeOpacity={0.7}>
-              <Ionicons name="swap-vertical" size={14} color={COLORS.green} />
-              <Text style={styles.sortText}>
-                {sortBy === 'newest' ? 'Newest First' : sortBy === 'oldest' ? 'Oldest First' : 'Highest Amount'}
-              </Text>
-              <Ionicons name="chevron-down" size={14} color={COLORS.textSecondary} />
-            </TouchableOpacity>
-          </View>
-
-          {sortedTransactions.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <Ionicons name="receipt-outline" size={44} color={COLORS.textMuted} />
-              <Text style={styles.emptyText}>No Transactions Found</Text>
-            </View>
-          ) : (
-            sortedTransactions.map((tx, index) => (
-              <TransactionItemCard
-                key={tx.id}
-                transaction={tx}
-                currency={settings.currency}
-                isLastItem={index === sortedTransactions.length - 1}
-              />
-            ))
-          )}
+        {/* Transactions List Card Header */}
+        <View style={styles.listHeaderRow}>
+          <Text style={styles.listTitle}>All Transactions ({sortedTransactions.length})</Text>
+          <Pressable
+            style={({ pressed }) => [styles.sortDropdown, pressed && styles.pressed]}
+            onPress={toggleSort}
+            accessibilityRole="button"
+            accessibilityLabel={`Sort order: ${sortBy}`}
+          >
+            <Ionicons name="swap-vertical" size={14} color={COLORS.green} />
+            <Text style={styles.sortText}>
+              {sortBy === 'newest' ? 'Newest First' : sortBy === 'oldest' ? 'Oldest First' : 'Highest Amount'}
+            </Text>
+            <Ionicons name="chevron-down" size={14} color={COLORS.textSecondary} />
+          </Pressable>
         </View>
-      </ScrollView>
+      </View>
+    ),
+    [
+      cashBalance,
+      totalIncome,
+      totalExpenses,
+      incomeCount,
+      expenseCount,
+      settings.currency,
+      selectedFilter,
+      sortBy,
+      sortedTransactions.length,
+      toggleSort,
+    ]
+  );
+
+  const renderEmptyComponent = useMemo(
+    () => (
+      <View style={styles.emptyContainer}>
+        <Ionicons name="receipt-outline" size={44} color={COLORS.textMuted} />
+        <Text style={styles.emptyText}>No Transactions Found</Text>
+        <Text style={styles.emptySub}>
+          Try adjusting your transaction filter or add a new transaction.
+        </Text>
+      </View>
+    ),
+    []
+  );
+
+  return (
+    <View style={styles.container}>
+      <Header
+        title="Cash Book"
+        showNotification={true}
+        rightAction={
+          <Pressable
+            style={({ pressed }) => [styles.exportBtn, pressed && styles.pressed]}
+            onPress={() => navigation.navigate('StatementModal')}
+            accessibilityRole="button"
+            accessibilityLabel="View Financial Statement Table"
+          >
+            <Ionicons name="document-text-outline" size={16} color={COLORS.green} />
+            <Text style={styles.exportText}>Statement</Text>
+          </Pressable>
+        }
+      />
+
+      <FlatList
+        data={sortedTransactions}
+        keyExtractor={(item) => item.id}
+        renderItem={renderTransactionItem}
+        ListHeaderComponent={renderListHeader}
+        ListEmptyComponent={renderEmptyComponent}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        initialNumToRender={12}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+      />
     </View>
   );
 };
@@ -197,7 +256,10 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingBottom: 90,
+    paddingBottom: 110,
+  },
+  headerComponentContainer: {
+    marginBottom: 8,
   },
   subHeader: {
     fontSize: 13,
@@ -209,6 +271,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
   },
   exportText: {
     fontSize: 13,
@@ -222,14 +286,15 @@ const styles = StyleSheet.create({
   },
   filterPillsRow: {
     gap: 8,
-    marginBottom: 20,
+    marginBottom: 16,
     alignItems: 'center',
   },
   filterPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    minHeight: 44,
     borderRadius: 20,
     backgroundColor: COLORS.card,
     borderWidth: 1,
@@ -241,7 +306,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.green,
   },
   filterPillText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '500',
     color: COLORS.textSecondary,
   },
@@ -250,8 +315,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   filterIconBtn: {
-    width: 36,
-    height: 36,
+    width: 44,
+    height: 44,
     borderRadius: 12,
     backgroundColor: COLORS.card,
     borderWidth: 1,
@@ -259,17 +324,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  listContainer: {
-    backgroundColor: COLORS.card,
-    borderRadius: 16,
-    padding: 16,
-    ...SHADOWS.small,
+  pressed: {
+    opacity: 0.7,
   },
   listHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginTop: 12,
+    marginBottom: 14,
   },
   listTitle: {
     fontSize: 16,
@@ -280,23 +343,33 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.inputBg,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderRadius: 8,
     gap: 4,
   },
   sortText: {
     fontSize: 12,
     color: COLORS.textSecondary,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   emptyContainer: {
     alignItems: 'center',
-    paddingVertical: 30,
+    paddingVertical: 40,
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    ...SHADOWS.small,
   },
   emptyText: {
-    fontSize: 14,
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+    marginTop: 10,
+  },
+  emptySub: {
+    fontSize: 13,
     color: COLORS.textSecondary,
-    marginTop: 8,
+    textAlign: 'center',
+    marginTop: 4,
   },
 });

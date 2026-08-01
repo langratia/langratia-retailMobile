@@ -1,20 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TextInput,
-  TouchableOpacity,
+  Pressable,
   Alert,
   Platform,
-  StatusBar as RNStatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../store/useAppStore';
 import { TransactionType } from '../types';
-import { COLORS } from '../theme/theme';
+import { COLORS, SHADOWS } from '../theme/theme';
+
+const PRESET_AMOUNTS = [5000, 10000, 20000, 50000, 100000];
 
 export const AddTransactionModal = ({ route, navigation }: any) => {
   const defaultType: TransactionType = route.params?.defaultType || 'income';
@@ -27,12 +28,22 @@ export const AddTransactionModal = ({ route, navigation }: any) => {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState(type === 'income' ? 'Sales' : 'Rent');
 
-  const incomeCategories = ['Sales', 'Services', 'Investments', 'Other Income'];
-  const expenseCategories = ['Rent', 'Utilities', 'Stock Purchase', 'Salaries', 'Other Expense'];
+  const incomeCategories = useMemo(
+    () => ['Sales', 'Services', 'Investments', 'Printery Services', 'Other Income'],
+    []
+  );
 
-  const categories = type === 'income' ? incomeCategories : expenseCategories;
+  const expenseCategories = useMemo(
+    () => ['Rent', 'Utilities', 'Stock Purchase', 'Salaries', 'Transport', 'Other Expense'],
+    []
+  );
 
-  const handleSave = () => {
+  const categories = useMemo(
+    () => (type === 'income' ? incomeCategories : expenseCategories),
+    [type, incomeCategories, expenseCategories]
+  );
+
+  const handleSave = useCallback(() => {
     const numAmount = parseFloat(amount);
     if (isNaN(numAmount) || numAmount <= 0) {
       Alert.alert('Validation Error', 'Please enter a valid positive transaction amount.');
@@ -51,37 +62,54 @@ export const AddTransactionModal = ({ route, navigation }: any) => {
     });
 
     navigation.goBack();
-  };
+  }, [amount, description, type, category, addTransaction, navigation]);
 
   return (
     <View style={[styles.container, { paddingTop: topPadding }]}>
       {/* Modal Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.7}>
+        <Pressable
+          onPress={() => navigation.goBack()}
+          style={({ pressed }) => [styles.closeBtn, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel="Close transaction modal"
+        >
           <Ionicons name="close-outline" size={26} color={COLORS.textPrimary} />
-        </TouchableOpacity>
+        </Pressable>
         <Text style={styles.headerTitle}>Add Transaction</Text>
-        <TouchableOpacity onPress={handleSave} activeOpacity={0.7}>
-          <Text style={styles.saveHeaderBtn}>Save</Text>
-        </TouchableOpacity>
+        <Pressable
+          onPress={handleSave}
+          style={({ pressed }) => [styles.saveHeaderBtn, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel="Save transaction header button"
+        >
+          <Text style={styles.saveHeaderText}>Save</Text>
+        </Pressable>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         {/* Income / Expense Toggle Switch */}
         <View style={styles.toggleRow}>
-          <TouchableOpacity
-            style={[
+          <Pressable
+            style={({ pressed }) => [
               styles.toggleBtn,
               type === 'income' && styles.incomeActive,
+              pressed && styles.pressed,
             ]}
             onPress={() => {
               setType('income');
               setCategory('Sales');
             }}
+            accessibilityRole="button"
+            accessibilityLabel="Income Inflow transaction type"
           >
             <Ionicons
               name="download-outline"
-              size={18}
+              size={20}
               color={type === 'income' ? COLORS.green : COLORS.textSecondary}
             />
             <Text
@@ -92,21 +120,24 @@ export const AddTransactionModal = ({ route, navigation }: any) => {
             >
               Income Inflow (+)
             </Text>
-          </TouchableOpacity>
+          </Pressable>
 
-          <TouchableOpacity
-            style={[
+          <Pressable
+            style={({ pressed }) => [
               styles.toggleBtn,
               type === 'expense' && styles.expenseActive,
+              pressed && styles.pressed,
             ]}
             onPress={() => {
               setType('expense');
               setCategory('Rent');
             }}
+            accessibilityRole="button"
+            accessibilityLabel="Expense Outflow transaction type"
           >
             <Ionicons
               name="arrow-up-circle-outline"
-              size={18}
+              size={20}
               color={type === 'expense' ? COLORS.red : COLORS.textSecondary}
             />
             <Text
@@ -117,10 +148,10 @@ export const AddTransactionModal = ({ route, navigation }: any) => {
             >
               Expense Outflow (-)
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
 
-        {/* Amount */}
+        {/* Amount Input */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Amount ({settings.currency})</Text>
           <TextInput
@@ -130,47 +161,107 @@ export const AddTransactionModal = ({ route, navigation }: any) => {
             placeholder="0.00"
             keyboardType="decimal-pad"
             placeholderTextColor={COLORS.textMuted}
+            accessibilityLabel="Transaction amount"
             autoFocus
           />
         </View>
 
-        {/* Description */}
+        {/* Quick Amount Presets */}
+        <View style={styles.presetSection}>
+          <Text style={styles.presetLabel}>Quick Presets:</Text>
+          <View style={styles.presetsRow}>
+            {PRESET_AMOUNTS.map((preset) => {
+              const isPresetSelected = amount === preset.toString();
+              return (
+                <Pressable
+                  key={preset}
+                  style={({ pressed }) => [
+                    styles.presetChip,
+                    isPresetSelected && (type === 'income' ? styles.incomePresetActive : styles.expensePresetActive),
+                    pressed && styles.pressed,
+                  ]}
+                  onPress={() => setAmount(preset.toString())}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Preset amount ${preset} ${settings.currency}`}
+                >
+                  <Text
+                    style={[
+                      styles.presetText,
+                      isPresetSelected && { color: type === 'income' ? COLORS.green : COLORS.red, fontWeight: '800' },
+                    ]}
+                  >
+                    {preset >= 1000 ? `${preset / 1000}k` : preset}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Description Input */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Description</Text>
           <TextInput
             style={styles.input}
             value={description}
             onChangeText={setDescription}
-            placeholder={type === 'income' ? 'e.g. Cash Sale' : 'e.g. Shop Rent'}
+            placeholder={type === 'income' ? 'e.g. Cash Sale / Service Charge' : 'e.g. Shop Rent / Electricity'}
             placeholderTextColor={COLORS.textMuted}
+            accessibilityLabel="Transaction description"
           />
         </View>
 
-        {/* Category */}
+        {/* Category Chips */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Category</Text>
           <View style={styles.categoryRow}>
-            {categories.map((cat) => (
-              <TouchableOpacity
-                key={cat}
-                style={[
-                  styles.categoryChip,
-                  category === cat && (type === 'income' ? styles.incomeChipActive : styles.expenseChipActive),
-                ]}
-                onPress={() => setCategory(cat)}
-              >
-                <Text
-                  style={[
-                    styles.categoryText,
-                    category === cat && { color: type === 'income' ? COLORS.green : COLORS.red, fontWeight: '700' },
+            {categories.map((cat) => {
+              const isSelected = category === cat;
+              return (
+                <Pressable
+                  key={cat}
+                  style={({ pressed }) => [
+                    styles.categoryChip,
+                    isSelected && (type === 'income' ? styles.incomeChipActive : styles.expenseChipActive),
+                    pressed && styles.pressed,
                   ]}
+                  onPress={() => setCategory(cat)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Category ${cat}`}
                 >
-                  {cat}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                  <Text
+                    style={[
+                      styles.categoryText,
+                      isSelected && {
+                        color: type === 'income' ? COLORS.green : COLORS.red,
+                        fontWeight: '700',
+                      },
+                    ]}
+                  >
+                    {cat}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
         </View>
+
+        {/* Form Body Save Button */}
+        <Pressable
+          style={({ pressed }) => [
+            styles.saveBodyBtn,
+            { backgroundColor: type === 'income' ? COLORS.green : COLORS.red },
+            pressed && styles.saveBodyBtnPressed,
+          ]}
+          onPress={handleSave}
+          accessibilityRole="button"
+          accessibilityLabel={`Save ${type === 'income' ? 'Income' : 'Expense'} transaction`}
+        >
+          <Ionicons name="checkmark-circle-outline" size={22} color={COLORS.card} />
+          <Text style={styles.saveBodyBtnText}>
+            Record {type === 'income' ? 'Income Inflow' : 'Expense Outflow'}
+          </Text>
+        </Pressable>
       </ScrollView>
     </View>
   );
@@ -191,18 +282,26 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderColor: COLORS.divider,
   },
+  closeBtn: {
+    padding: 4,
+  },
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: COLORS.textPrimary,
   },
   saveHeaderBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+  },
+  saveHeaderText: {
     fontSize: 16,
     fontWeight: '700',
     color: COLORS.green,
   },
   scrollContent: {
     padding: 20,
+    paddingBottom: 40,
   },
   toggleRow: {
     flexDirection: 'row',
@@ -214,12 +313,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 48,
+    height: 50,
     borderRadius: 14,
     backgroundColor: COLORS.card,
     borderWidth: 1,
     borderColor: COLORS.divider,
     gap: 6,
+    ...SHADOWS.small,
   },
   incomeActive: {
     backgroundColor: COLORS.greenBg,
@@ -240,7 +340,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: '600',
-    color: COLORS.textSecondary,
+    color: COLORS.textPrimary,
     marginBottom: 8,
   },
   amountInput: {
@@ -248,11 +348,49 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingHorizontal: 16,
     height: 56,
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 26,
+    fontWeight: '800',
     color: COLORS.textPrimary,
     borderWidth: 1,
     borderColor: COLORS.divider,
+  },
+  presetSection: {
+    marginBottom: 20,
+  },
+  presetLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+    marginBottom: 8,
+  },
+  presetsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  presetChip: {
+    flex: 1,
+    minWidth: 54,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: COLORS.card,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.divider,
+  },
+  incomePresetActive: {
+    backgroundColor: COLORS.greenBg,
+    borderColor: COLORS.green,
+  },
+  expensePresetActive: {
+    backgroundColor: COLORS.redBg,
+    borderColor: COLORS.red,
+  },
+  presetText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
   },
   input: {
     backgroundColor: COLORS.card,
@@ -271,11 +409,13 @@ const styles = StyleSheet.create({
   },
   categoryChip: {
     paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingVertical: 10,
+    minHeight: 44,
     borderRadius: 20,
     backgroundColor: COLORS.card,
     borderWidth: 1,
     borderColor: COLORS.divider,
+    justifyContent: 'center',
   },
   incomeChipActive: {
     backgroundColor: COLORS.greenBg,
@@ -289,5 +429,26 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500',
     color: COLORS.textSecondary,
+  },
+  saveBodyBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 14,
+    height: 52,
+    gap: 8,
+    marginTop: 8,
+    ...SHADOWS.small,
+  },
+  saveBodyBtnPressed: {
+    opacity: 0.85,
+  },
+  saveBodyBtnText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.card,
+  },
+  pressed: {
+    opacity: 0.7,
   },
 });

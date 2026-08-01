@@ -1,18 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TextInput,
-  TouchableOpacity,
+  Pressable,
+  FlatList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '../store/useAppStore';
-import { COLORS, SHADOWS } from '../theme/theme';
+import { COLORS } from '../theme/theme';
 import { Header } from '../components/Header';
 import { StatCard } from '../components/StatCard';
 import { ProductItemCard } from '../components/ProductItemCard';
+import { Product } from '../types';
 
 export const InventoryScreen = ({ route, navigation }: any) => {
   const { products, settings, adjustStock } = useAppStore();
@@ -22,57 +24,75 @@ export const InventoryScreen = ({ route, navigation }: any) => {
   );
   const [sortBy, setSortBy] = useState<'name' | 'quantity' | 'price'>('name');
 
-  const toggleSort = () => {
-    if (sortBy === 'name') setSortBy('quantity');
-    else if (sortBy === 'quantity') setSortBy('price');
-    else setSortBy('name');
-  };
-
-  React.useEffect(() => {
+  useEffect(() => {
     if (route?.params?.filterLowStock) {
       setCategoryFilter('Low Stock');
     }
   }, [route?.params?.filterLowStock]);
 
-  // Stats Computations
-  const totalProductsCount = products.length;
-  const totalUnitsCount = products.reduce((acc, p) => acc + p.quantity, 0);
-  const totalInventoryValue = products.reduce(
-    (acc, p) => acc + p.quantity * p.buyPrice,
-    0
+  const toggleSort = useCallback(() => {
+    if (sortBy === 'name') setSortBy('quantity');
+    else if (sortBy === 'quantity') setSortBy('price');
+    else setSortBy('name');
+  }, [sortBy]);
+
+  // 1. Stats Computations (Memoized)
+  const { totalProductsCount, totalUnitsCount, totalInventoryValue } = useMemo(() => {
+    const pCount = products.length;
+    const uCount = products.reduce((acc, p) => acc + p.quantity, 0);
+    const iVal = products.reduce((acc, p) => acc + p.quantity * p.buyPrice, 0);
+    return {
+      totalProductsCount: pCount,
+      totalUnitsCount: uCount,
+      totalInventoryValue: iVal,
+    };
+  }, [products]);
+
+  // 2. Filtered & Sorted Products (Memoized)
+  const sortedProducts = useMemo(() => {
+    const filtered = products.filter((p) => {
+      const matchesSearch =
+        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.category.toLowerCase().includes(searchQuery.toLowerCase());
+
+      let matchesCategory = true;
+      if (categoryFilter === 'Low Stock') {
+        matchesCategory = p.quantity <= settings.lowStockThreshold;
+      } else if (categoryFilter !== 'All') {
+        matchesCategory = p.category === categoryFilter;
+      }
+
+      return matchesSearch && matchesCategory;
+    });
+
+    return [...filtered].sort((a, b) => {
+      if (sortBy === 'quantity') return b.quantity - a.quantity;
+      if (sortBy === 'price') return b.sellPrice - a.sellPrice;
+      return a.name.localeCompare(b.name);
+    });
+  }, [products, searchQuery, categoryFilter, sortBy, settings.lowStockThreshold]);
+
+  const lowStockCount = useMemo(() => {
+    return products.filter((p) => p.quantity <= settings.lowStockThreshold).length;
+  }, [products, settings.lowStockThreshold]);
+
+  const renderProductItem = useCallback(
+    ({ item }: { item: Product }) => (
+      <ProductItemCard
+        product={item}
+        currency={settings.currency}
+        onAddStock={() => adjustStock(item.id, 1)}
+        onRemoveStock={() => adjustStock(item.id, -1)}
+        onEdit={() => navigation.navigate('AddEditProduct', { product: item })}
+        onPressDetails={() => navigation.navigate('ProductDetails', { productId: item.id })}
+      />
+    ),
+    [settings.currency, adjustStock, navigation]
   );
 
-  const filteredProducts = products.filter((p) => {
-    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.category.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    let matchesCategory = true;
-    if (categoryFilter === 'Low Stock') {
-      matchesCategory = p.quantity <= settings.lowStockThreshold;
-    } else if (categoryFilter !== 'All') {
-      matchesCategory = p.category === categoryFilter;
-    }
-
-    return matchesSearch && matchesCategory;
-  });
-
-  const sortedProducts = [...filteredProducts].sort((a, b) => {
-    if (sortBy === 'quantity') return b.quantity - a.quantity;
-    if (sortBy === 'price') return b.sellPrice - a.sellPrice;
-    return a.name.localeCompare(b.name);
-  });
-
-  return (
-    <View style={styles.container}>
-      <Header
-        title="Inventory"
-        showNotification={true}
-      />
-
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+  const renderListHeader = useMemo(
+    () => (
+      <View style={styles.headerComponentContainer}>
         <Text style={styles.subHeader}>Manage your products and stock</Text>
 
         {/* Search Bar & Filter Toggle */}
@@ -81,21 +101,33 @@ export const InventoryScreen = ({ route, navigation }: any) => {
             <Ionicons name="search-outline" size={20} color={COLORS.textMuted} style={styles.searchIcon} />
             <TextInput
               style={styles.searchInput}
-              placeholder="Search products..."
+              placeholder="Search products or categories..."
               placeholderTextColor={COLORS.textMuted}
               value={searchQuery}
               onChangeText={setSearchQuery}
+              accessibilityLabel="Search products"
+              accessibilityHint="Type a product name or category to filter list"
             />
             {searchQuery !== '' && (
-              <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <Ionicons name="close-circle" size={18} color={COLORS.textMuted} />
-              </TouchableOpacity>
+              <Pressable
+                onPress={() => setSearchQuery('')}
+                accessibilityRole="button"
+                accessibilityLabel="Clear search input"
+              >
+                <Ionicons name="close-circle" size={20} color={COLORS.textMuted} />
+              </Pressable>
             )}
           </View>
 
-          <TouchableOpacity style={styles.filterBtn} activeOpacity={0.7} onPress={toggleSort}>
+          <Pressable
+            style={({ pressed }) => [styles.filterBtn, pressed && styles.pressed]}
+            onPress={toggleSort}
+            accessibilityRole="button"
+            accessibilityLabel={`Sort products by ${sortBy}`}
+            accessibilityHint="Toggles sorting between name, stock quantity, and price"
+          >
             <Ionicons name="options-outline" size={20} color={COLORS.green} />
-          </TouchableOpacity>
+          </Pressable>
         </View>
 
         {/* 3 Metrics Cards Row */}
@@ -103,7 +135,7 @@ export const InventoryScreen = ({ route, navigation }: any) => {
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.metricsRow}
-          style={{ marginBottom: 12 }}
+          style={{ marginBottom: 16 }}
         >
           <View style={{ width: 140 }}>
             <StatCard
@@ -141,40 +173,56 @@ export const InventoryScreen = ({ route, navigation }: any) => {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ flexDirection: 'row', gap: 8, marginVertical: 12 }}
+          contentContainerStyle={{ flexDirection: 'row', gap: 8, marginVertical: 8 }}
         >
-          {['All', 'Low Stock', 'Smartphones', 'Feature Phones', 'Accessories', 'Audio', 'Storage', 'Wearables', 'Electronics', 'General'].map((cat) => {
+          {[
+            'All',
+            'Low Stock',
+            'Smartphones',
+            'Feature Phones',
+            'Accessories',
+            'Audio',
+            'Storage',
+            'Wearables',
+            'Electronics',
+            'Printery Services',
+            'General',
+          ].map((cat) => {
             const isActive = categoryFilter === cat;
             const isLowStock = cat === 'Low Stock';
             return (
-              <TouchableOpacity
+              <Pressable
                 key={cat}
-                style={{
-                  paddingHorizontal: 14,
-                  paddingVertical: 7,
-                  borderRadius: 20,
-                  backgroundColor: isActive
-                    ? isLowStock
-                      ? COLORS.amberBg
-                      : COLORS.greenBg
-                    : COLORS.card,
-                  borderWidth: 1,
-                  borderColor: isActive
-                    ? isLowStock
-                      ? COLORS.amber
-                      : COLORS.green
-                    : COLORS.divider,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 4,
-                }}
+                style={({ pressed }) => [
+                  styles.filterChip,
+                  {
+                    backgroundColor: isActive
+                      ? isLowStock
+                        ? COLORS.amberBg
+                        : COLORS.greenBg
+                      : COLORS.card,
+                    borderColor: isActive
+                      ? isLowStock
+                        ? COLORS.amber
+                        : COLORS.green
+                      : COLORS.divider,
+                  },
+                  pressed && styles.pressed,
+                ]}
                 onPress={() => setCategoryFilter(cat)}
-                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel={`Filter by ${cat} ${isLowStock ? `(${lowStockCount} items)` : ''}`}
               >
-                {isLowStock && <Ionicons name="warning-outline" size={14} color={isActive ? COLORS.amber : COLORS.textSecondary} />}
+                {isLowStock && (
+                  <Ionicons
+                    name="warning-outline"
+                    size={14}
+                    color={isActive ? COLORS.amber : COLORS.textSecondary}
+                  />
+                )}
                 <Text
                   style={{
-                    fontSize: 12,
+                    fontSize: 13,
                     fontWeight: isActive ? '700' : '500',
                     color: isActive
                       ? isLowStock
@@ -183,9 +231,9 @@ export const InventoryScreen = ({ route, navigation }: any) => {
                       : COLORS.textSecondary,
                   }}
                 >
-                  {cat} {isLowStock ? `(${products.filter(p => p.quantity <= settings.lowStockThreshold).length})` : ''}
+                  {cat} {isLowStock ? `(${lowStockCount})` : ''}
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             );
           })}
         </ScrollView>
@@ -195,36 +243,63 @@ export const InventoryScreen = ({ route, navigation }: any) => {
           <Text style={styles.listHeaderTitle}>
             All Products ({sortedProducts.length})
           </Text>
-          <TouchableOpacity style={styles.sortDropdown} onPress={toggleSort} activeOpacity={0.7}>
+          <Pressable
+            style={({ pressed }) => [styles.sortDropdown, pressed && styles.pressed]}
+            onPress={toggleSort}
+            accessibilityRole="button"
+            accessibilityLabel={`Sort order: ${sortBy}`}
+          >
             <Text style={styles.sortText}>
               Sort: {sortBy === 'name' ? 'Name' : sortBy === 'quantity' ? 'Stock Qty' : 'Price'}
             </Text>
             <Ionicons name="swap-vertical" size={14} color={COLORS.green} />
-          </TouchableOpacity>
+          </Pressable>
         </View>
+      </View>
+    ),
+    [
+      searchQuery,
+      sortBy,
+      totalProductsCount,
+      totalUnitsCount,
+      totalInventoryValue,
+      settings.currency,
+      categoryFilter,
+      lowStockCount,
+      sortedProducts.length,
+      toggleSort,
+    ]
+  );
 
-        {/* Products List */}
-        {sortedProducts.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Ionicons name="cube-outline" size={48} color={COLORS.textMuted} />
-            <Text style={styles.emptyTitle}>No Products Found</Text>
-            <Text style={styles.emptySub}>Try adjusting your search query or add a new product.</Text>
-          </View>
-        ) : (
-          sortedProducts.map((product) => (
-            <ProductItemCard
-              key={product.id}
-              product={product}
-              currency={settings.currency}
-              onAddStock={() => adjustStock(product.id, 1)}
-              onRemoveStock={() => adjustStock(product.id, -1)}
-              onEdit={() => navigation.navigate('AddEditProduct', { product })}
-              onPressDetails={() => navigation.navigate('ProductDetails', { productId: product.id })}
-            />
-          ))
-        )}
-      </ScrollView>
+  const renderEmptyComponent = useMemo(
+    () => (
+      <View style={styles.emptyContainer}>
+        <Ionicons name="cube-outline" size={48} color={COLORS.textMuted} />
+        <Text style={styles.emptyTitle}>No Products Found</Text>
+        <Text style={styles.emptySub}>
+          Try adjusting your search query or clear your category filter.
+        </Text>
+      </View>
+    ),
+    []
+  );
 
+  return (
+    <View style={styles.container}>
+      <Header title="Inventory" showNotification={true} />
+
+      <FlatList
+        data={sortedProducts}
+        keyExtractor={(item) => item.id}
+        renderItem={renderProductItem}
+        ListHeaderComponent={renderListHeader}
+        ListEmptyComponent={renderEmptyComponent}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+      />
     </View>
   );
 };
@@ -236,7 +311,10 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingBottom: 90,
+    paddingBottom: 110,
+  },
+  headerComponentContainer: {
+    marginBottom: 8,
   },
   subHeader: {
     fontSize: 13,
@@ -256,7 +334,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.inputBg,
     borderRadius: 12,
     paddingHorizontal: 12,
-    height: 44,
+    height: 48,
   },
   searchIcon: {
     marginRight: 8,
@@ -267,8 +345,8 @@ const styles = StyleSheet.create({
     color: COLORS.textPrimary,
   },
   filterBtn: {
-    width: 44,
-    height: 44,
+    width: 48,
+    height: 48,
     borderRadius: 12,
     backgroundColor: COLORS.card,
     alignItems: 'center',
@@ -276,15 +354,29 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.divider,
   },
+  pressed: {
+    opacity: 0.7,
+  },
   metricsRow: {
     flexDirection: 'row',
     gap: 10,
     marginBottom: 20,
   },
+  filterChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    minHeight: 44,
+    borderRadius: 20,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   listHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginTop: 12,
     marginBottom: 14,
   },
   listHeaderTitle: {
@@ -296,11 +388,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
   },
   sortText: {
-    fontSize: 12,
+    fontSize: 13,
     color: COLORS.textSecondary,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   emptyContainer: {
     alignItems: 'center',

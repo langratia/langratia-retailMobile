@@ -3,7 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
+  Pressable,
   LayoutAnimation,
   Platform,
   UIManager,
@@ -49,10 +49,15 @@ export const ProductItemCard: React.FC<ProductItemCardProps> = ({
   return (
     <View style={styles.card}>
       {/* Compact Main Row */}
-      <TouchableOpacity
-        style={styles.mainRow}
+      <Pressable
+        style={({ pressed }) => [
+          styles.mainRow,
+          pressed && styles.pressedRow,
+        ]}
         onPress={toggleExpand}
-        activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityLabel={`${product.name}, Category: ${product.category}. Price: ${currency} ${product.sellPrice.toLocaleString()}. Quantity: ${product.quantity}`}
+        accessibilityHint="Tap to expand product details and quick actions"
       >
         <View style={styles.nameSection}>
           <Text style={styles.name}>{product.name}</Text>
@@ -60,7 +65,7 @@ export const ProductItemCard: React.FC<ProductItemCardProps> = ({
         </View>
 
         <View style={styles.rightCompactSection}>
-          <Text 
+          <Text
             style={styles.priceTag}
             numberOfLines={1}
             adjustsFontSizeToFit={true}
@@ -75,7 +80,7 @@ export const ProductItemCard: React.FC<ProductItemCardProps> = ({
             style={{ marginLeft: 6 }}
           />
         </View>
-      </TouchableOpacity>
+      </Pressable>
 
       {/* Slide-Down Expanded Details */}
       {expanded && (
@@ -86,7 +91,7 @@ export const ProductItemCard: React.FC<ProductItemCardProps> = ({
           <View style={styles.metricsRow}>
             <View style={styles.metricCol}>
               <Text style={styles.metricLabel}>Buy Price</Text>
-              <Text 
+              <Text
                 style={styles.metricValue}
                 numberOfLines={1}
                 adjustsFontSizeToFit={true}
@@ -97,7 +102,7 @@ export const ProductItemCard: React.FC<ProductItemCardProps> = ({
 
             <View style={styles.metricCol}>
               <Text style={styles.metricLabel}>Sell Price</Text>
-              <Text 
+              <Text
                 style={styles.metricValue}
                 numberOfLines={1}
                 adjustsFontSizeToFit={true}
@@ -108,7 +113,7 @@ export const ProductItemCard: React.FC<ProductItemCardProps> = ({
 
             <View style={styles.metricCol}>
               <Text style={styles.metricLabel}>Total Value</Text>
-              <Text 
+              <Text
                 style={[styles.metricValue, { color: COLORS.green, fontWeight: '700' }]}
                 numberOfLines={1}
                 adjustsFontSizeToFit={true}
@@ -120,41 +125,61 @@ export const ProductItemCard: React.FC<ProductItemCardProps> = ({
 
           {/* Action Buttons Row */}
           <View style={styles.actionsRow}>
-            <TouchableOpacity
-              style={[styles.actionBtn, { backgroundColor: COLORS.greenBg }]}
+            <Pressable
+              style={({ pressed }) => [
+                styles.actionBtn,
+                { backgroundColor: COLORS.greenBg },
+                pressed && styles.btnPressed,
+              ]}
               onPress={onAddStock}
-              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={`Add 1 stock unit to ${product.name}`}
             >
-              <Ionicons name="add-circle" size={14} color={COLORS.green} />
-              <Text style={[styles.actionText, { color: COLORS.green }]}>Stock</Text>
-            </TouchableOpacity>
+              <Ionicons name="add-circle" size={16} color={COLORS.green} />
+              <Text style={[styles.actionText, { color: COLORS.green }]}>+ Stock</Text>
+            </Pressable>
 
-            <TouchableOpacity
-              style={[styles.actionBtn, { backgroundColor: COLORS.redBg }]}
+            <Pressable
+              style={({ pressed }) => [
+                styles.actionBtn,
+                { backgroundColor: COLORS.redBg },
+                pressed && styles.btnPressed,
+              ]}
               onPress={onRemoveStock}
-              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={`Remove 1 stock unit from ${product.name}`}
             >
-              <Ionicons name="remove-circle" size={14} color={COLORS.red} />
-              <Text style={[styles.actionText, { color: COLORS.red }]}>Remove</Text>
-            </TouchableOpacity>
+              <Ionicons name="remove-circle" size={16} color={COLORS.red} />
+              <Text style={[styles.actionText, { color: COLORS.red }]}>- Remove</Text>
+            </Pressable>
 
-            <TouchableOpacity
-              style={[styles.actionBtn, { backgroundColor: COLORS.inputBg }]}
+            <Pressable
+              style={({ pressed }) => [
+                styles.actionBtn,
+                { backgroundColor: COLORS.inputBg },
+                pressed && styles.btnPressed,
+              ]}
               onPress={onEdit}
-              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={`Edit ${product.name}`}
             >
-              <Ionicons name="create-outline" size={14} color={COLORS.textSecondary} />
+              <Ionicons name="create-outline" size={16} color={COLORS.textSecondary} />
               <Text style={[styles.actionText, { color: COLORS.textSecondary }]}>Edit</Text>
-            </TouchableOpacity>
+            </Pressable>
 
-            <TouchableOpacity
-              style={[styles.actionBtn, { backgroundColor: COLORS.blueBg }]}
+            <Pressable
+              style={({ pressed }) => [
+                styles.actionBtn,
+                { backgroundColor: COLORS.blueBg },
+                pressed && styles.btnPressed,
+              ]}
               onPress={onPressDetails}
-              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={`View details for ${product.name}`}
             >
-              <Ionicons name="information-circle-outline" size={14} color={COLORS.blue} />
+              <Ionicons name="information-circle-outline" size={16} color={COLORS.blue} />
               <Text style={[styles.actionText, { color: COLORS.blue }]}>Details</Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
       )}
@@ -175,6 +200,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    minHeight: 44,
+  },
+  pressedRow: {
+    opacity: 0.8,
   },
   nameSection: {
     flex: 1,
@@ -236,13 +265,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
+    paddingVertical: 10,
+    minHeight: 44,
     borderRadius: 10,
     gap: 4,
+  },
+  btnPressed: {
+    opacity: 0.7,
   },
   actionText: {
     fontSize: 12,
     fontWeight: '700',
   },
 });
-

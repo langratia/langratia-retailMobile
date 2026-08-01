@@ -1,13 +1,12 @@
-import React from 'react';
+import React, { useMemo, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
+  Pressable,
   Alert,
   Platform,
-  StatusBar as RNStatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,21 +20,29 @@ export const ProductDetailsModal = ({ route, navigation }: any) => {
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === 'ios' ? insets.top : 8;
 
-  const product = products.find((p) => p.id === productId);
+  const product = useMemo(
+    () => products.find((p) => p.id === productId),
+    [products, productId]
+  );
 
-  if (!product) {
-    return (
-      <View style={[styles.container, { paddingTop: topPadding }]}>
-        <Text style={styles.emptyText}>Product not found.</Text>
-      </View>
-    );
-  }
+  // Financial Metrics (Memoized)
+  const { marginPerUnit, totalCost, totalRevenue, isLoss } = useMemo(() => {
+    if (!product) {
+      return { marginPerUnit: 0, totalCost: 0, totalRevenue: 0, isLoss: false };
+    }
+    const margin = product.sellPrice - product.buyPrice;
+    const cost = product.quantity * product.buyPrice;
+    const rev = product.quantity * product.sellPrice;
+    return {
+      marginPerUnit: margin,
+      totalCost: cost,
+      totalRevenue: rev,
+      isLoss: margin < 0,
+    };
+  }, [product]);
 
-  const marginPerUnit = product.sellPrice - product.buyPrice;
-  const totalCost = product.quantity * product.buyPrice;
-  const totalRevenue = product.quantity * product.sellPrice;
-
-  const handleDelete = () => {
+  const handleDelete = useCallback(() => {
+    if (!product) return;
     Alert.alert(
       'Delete Product',
       `Are you sure you want to delete ${product.name}?`,
@@ -51,22 +58,40 @@ export const ProductDetailsModal = ({ route, navigation }: any) => {
         },
       ]
     );
-  };
+  }, [product, deleteProduct, navigation]);
+
+  if (!product) {
+    return (
+      <View style={[styles.container, { paddingTop: topPadding }]}>
+        <Text style={styles.emptyText}>Product not found.</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, { paddingTop: topPadding }]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.7}>
+        <Pressable
+          onPress={() => navigation.goBack()}
+          style={({ pressed }) => [styles.headerBtn, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+        >
           <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
-        </TouchableOpacity>
+        </Pressable>
         <Text style={styles.headerTitle}>Product Details</Text>
-        <TouchableOpacity onPress={handleDelete} activeOpacity={0.7}>
+        <Pressable
+          onPress={handleDelete}
+          style={({ pressed }) => [styles.headerBtn, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel={`Delete ${product.name}`}
+        >
           <Ionicons name="trash-outline" size={22} color={COLORS.red} />
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Main Product Card */}
         <View style={styles.mainCard}>
           <View style={styles.iconBox}>
@@ -79,7 +104,7 @@ export const ProductDetailsModal = ({ route, navigation }: any) => {
 
           <Text style={styles.productName}>{product.name}</Text>
           <Text style={styles.categoryText}>Category: {product.category}</Text>
-          
+
           <View style={{ marginTop: 10 }}>
             <Badge quantity={product.quantity} lowStockThreshold={settings.lowStockThreshold} />
           </View>
@@ -91,18 +116,27 @@ export const ProductDetailsModal = ({ route, navigation }: any) => {
 
           <View style={styles.row}>
             <Text style={styles.rowLabel}>Buying Price (Cost):</Text>
-            <Text style={styles.rowValue}>{settings.currency}{product.buyPrice.toFixed(2)}</Text>
+            <Text style={styles.rowValue}>
+              {settings.currency}{product.buyPrice.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            </Text>
           </View>
 
           <View style={styles.row}>
             <Text style={styles.rowLabel}>Selling Price:</Text>
-            <Text style={styles.rowValue}>{settings.currency}{product.sellPrice.toFixed(2)}</Text>
+            <Text style={styles.rowValue}>
+              {settings.currency}{product.sellPrice.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            </Text>
           </View>
 
           <View style={styles.row}>
             <Text style={styles.rowLabel}>Profit Margin Per Unit:</Text>
-            <Text style={[styles.rowValue, { color: COLORS.green }]}>
-              +{settings.currency}{marginPerUnit.toFixed(2)}
+            <Text
+              style={[
+                styles.rowValue,
+                { color: isLoss ? COLORS.red : COLORS.green },
+              ]}
+            >
+              {marginPerUnit >= 0 ? '+' : ''}{settings.currency}{marginPerUnit.toLocaleString('en-US', { minimumFractionDigits: 2 })}
             </Text>
           </View>
 
@@ -114,44 +148,59 @@ export const ProductDetailsModal = ({ route, navigation }: any) => {
           <View style={styles.row}>
             <Text style={styles.rowLabel}>Total Stock Value (Cost):</Text>
             <Text style={[styles.rowValue, { color: COLORS.purple }]}>
-              {settings.currency}{totalCost.toFixed(2)}
+              {settings.currency}{totalCost.toLocaleString('en-US', { minimumFractionDigits: 2 })}
             </Text>
           </View>
 
           <View style={styles.row}>
             <Text style={styles.rowLabel}>Potential Stock Revenue:</Text>
             <Text style={[styles.rowValue, { color: COLORS.blue }]}>
-              {settings.currency}{totalRevenue.toFixed(2)}
+              {settings.currency}{totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2 })}
             </Text>
           </View>
         </View>
 
-        {/* Action Buttons */}
+        {/* Stock Adjustment Buttons */}
         <View style={styles.actionsContainer}>
-          <TouchableOpacity
-            style={[styles.actionBtn, { backgroundColor: COLORS.greenBg, borderColor: COLORS.green }]}
+          <Pressable
+            style={({ pressed }) => [
+              styles.actionBtn,
+              { backgroundColor: COLORS.greenBg, borderColor: COLORS.green },
+              pressed && styles.pressed,
+            ]}
             onPress={() => adjustStock(product.id, 1)}
+            accessibilityRole="button"
+            accessibilityLabel={`Add 1 unit to stock for ${product.name}`}
           >
             <Ionicons name="add-circle-outline" size={20} color={COLORS.green} />
-            <Text style={[styles.actionText, { color: COLORS.green }]}>Add 1 Unit</Text>
-          </TouchableOpacity>
+            <Text style={[styles.actionText, { color: COLORS.green }]}>+ 1 Unit</Text>
+          </Pressable>
 
-          <TouchableOpacity
-            style={[styles.actionBtn, { backgroundColor: COLORS.redBg, borderColor: COLORS.red }]}
+          <Pressable
+            style={({ pressed }) => [
+              styles.actionBtn,
+              { backgroundColor: COLORS.redBg, borderColor: COLORS.red },
+              pressed && styles.pressed,
+            ]}
             onPress={() => adjustStock(product.id, -1)}
+            accessibilityRole="button"
+            accessibilityLabel={`Remove 1 unit from stock for ${product.name}`}
           >
             <Ionicons name="remove-circle-outline" size={20} color={COLORS.red} />
-            <Text style={[styles.actionText, { color: COLORS.red }]}>Remove 1 Unit</Text>
-          </TouchableOpacity>
+            <Text style={[styles.actionText, { color: COLORS.red }]}>- 1 Unit</Text>
+          </Pressable>
         </View>
 
-        <TouchableOpacity
-          style={styles.editBtn}
+        {/* Edit Button */}
+        <Pressable
+          style={({ pressed }) => [styles.editBtn, pressed && styles.editBtnPressed]}
           onPress={() => navigation.navigate('AddEditProduct', { product })}
+          accessibilityRole="button"
+          accessibilityLabel={`Edit product details for ${product.name}`}
         >
           <Ionicons name="pencil" size={18} color={COLORS.card} />
           <Text style={styles.editBtnText}>Edit Product</Text>
-        </TouchableOpacity>
+        </Pressable>
       </ScrollView>
     </View>
   );
@@ -172,6 +221,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderColor: COLORS.divider,
   },
+  headerBtn: {
+    padding: 4,
+  },
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
@@ -179,6 +231,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
+    paddingBottom: 40,
   },
   emptyText: {
     padding: 20,
@@ -267,12 +320,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: COLORS.blue,
     borderRadius: 14,
-    height: 50,
+    height: 52,
     gap: 8,
+    ...SHADOWS.small,
+  },
+  editBtnPressed: {
+    opacity: 0.85,
   },
   editBtnText: {
     fontSize: 16,
     fontWeight: '700',
     color: COLORS.card,
+  },
+  pressed: {
+    opacity: 0.7,
   },
 });
