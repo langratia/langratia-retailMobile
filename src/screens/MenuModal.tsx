@@ -7,12 +7,14 @@ import {
   ScrollView,
   Alert,
   Platform,
+  Share,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../store/useAppStore';
 import { COLORS, SHADOWS } from '../theme/theme';
 import { SuccessModal } from '../components/SuccessModal';
+import { generateFinancialStatementPDF } from '../utils/pdfGenerator';
 
 export const MenuModal = ({ navigation }: any) => {
   const { settings, logout, products, transactions } = useAppStore();
@@ -28,13 +30,45 @@ export const MenuModal = ({ navigation }: any) => {
     subtitle: '',
   });
 
-  const handleExportData = useCallback(() => {
-    setSuccessConfig({
-      visible: true,
-      title: 'Export Data Ready',
-      subtitle: `Total products: ${products.length}, Total transactions: ${transactions.length}. Saved in local offline storage.`,
-    });
-  }, [products.length, transactions.length]);
+  const handleExportData = useCallback(async () => {
+    try {
+      const backupPayload = {
+        business: settings.businessName,
+        owner: settings.ownerName,
+        currency: settings.currency,
+        exportedAt: new Date().toISOString(),
+        productsCount: products.length,
+        transactionsCount: transactions.length,
+        products,
+        transactions,
+      };
+
+      await Share.share({
+        title: `${settings.businessName} Business Data Backup`,
+        message: JSON.stringify(backupPayload, null, 2),
+      });
+    } catch (error) {
+      Alert.alert('Backup Error', 'Unable to share data backup.');
+    }
+  }, [settings, products, transactions]);
+
+  const handleExportPDF = useCallback(async () => {
+    try {
+      const inc = transactions.filter((t) => t.type === 'income').reduce((a, b) => a + b.amount, 0);
+      const exp = transactions.filter((t) => t.type === 'expense').reduce((a, b) => a + b.amount, 0);
+      await generateFinancialStatementPDF({
+        businessName: settings.businessName,
+        ownerName: settings.ownerName,
+        currency: settings.currency,
+        totalIncome: inc,
+        totalExpenses: exp,
+        netBalance: inc - exp,
+        transactions,
+      });
+    } catch (error) {
+      Alert.alert('PDF Error', 'Unable to generate PDF report.');
+    }
+  }, [settings, transactions]);
 
   const handleHelpGuide = useCallback(() => {
     setSuccessConfig({
@@ -152,7 +186,7 @@ export const MenuModal = ({ navigation }: any) => {
             <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
           </Pressable>
 
-          {/* Export & Backup */}
+          {/* Export & Backup Data (JSON) */}
           <Pressable
             style={({ pressed }) => [styles.menuItem, pressed && styles.pressedItem]}
             onPress={handleExportData}
@@ -164,8 +198,26 @@ export const MenuModal = ({ navigation }: any) => {
               <Ionicons name="cloud-download-outline" size={22} color={COLORS.purple} />
             </View>
             <View style={styles.menuTextContent}>
-              <Text style={styles.menuTitle}>Export & Backup Data</Text>
-              <Text style={styles.menuSub}>Backup records locally</Text>
+              <Text style={styles.menuTitle}>Export & Backup Data (JSON)</Text>
+              <Text style={styles.menuSub}>Complete database backup</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
+          </Pressable>
+
+          {/* Export PDF Report */}
+          <Pressable
+            style={({ pressed }) => [styles.menuItem, pressed && styles.pressedItem]}
+            onPress={handleExportPDF}
+            accessibilityRole="button"
+            accessibilityLabel="Export PDF Financial Report"
+            accessibilityHint="Generate and share printable PDF financial statement"
+          >
+            <View style={[styles.iconBox, { backgroundColor: COLORS.redBg }]}>
+              <Ionicons name="print-outline" size={22} color={COLORS.red} />
+            </View>
+            <View style={styles.menuTextContent}>
+              <Text style={styles.menuTitle}>Export PDF Report</Text>
+              <Text style={styles.menuSub}>Printable financial PDF statement</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
           </Pressable>
@@ -235,7 +287,11 @@ const styles = StyleSheet.create({
     borderColor: COLORS.divider,
   },
   closeBtn: {
-    padding: 4,
+    padding: 8,
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerTitle: {
     fontSize: 18,

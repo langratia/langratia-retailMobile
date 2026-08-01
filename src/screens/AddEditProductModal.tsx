@@ -9,6 +9,7 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -142,11 +143,15 @@ export const AddEditProductModal = ({ route, navigation }: any) => {
         <View style={{ width: 26 }} />
       </View>
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={{ flex: 1 }}
       >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
         {/* Name Input */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Product Name</Text>
@@ -280,7 +285,8 @@ export const AddEditProductModal = ({ route, navigation }: any) => {
             </>
           )}
         </Pressable>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       {/* Tactile Success Pop Modal */}
       <SuccessModal
@@ -318,7 +324,11 @@ const styles = StyleSheet.create({
     borderColor: COLORS.divider,
   },
   closeBtn: {
-    padding: 4,
+    padding: 8,
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerTitle: {
     fontSize: 18,

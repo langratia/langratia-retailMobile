@@ -7,18 +7,21 @@ import {
   Alert,
   Platform,
   FlatList,
+  Share,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../store/useAppStore';
 import { COLORS, SHADOWS } from '../theme/theme';
 import { SuccessModal } from '../components/SuccessModal';
+import { generateFinancialStatementPDF } from '../utils/pdfGenerator';
 
 export const StatementModal = ({ navigation }: any) => {
   const { transactions, settings } = useAppStore();
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === 'ios' ? insets.top : 8;
   const [filterType, setFilterType] = useState<'all' | 'income' | 'expense' | 'credit'>('all');
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
   const [successConfig, setSuccessConfig] = useState<{
     visible: boolean;
     title: string;
@@ -73,13 +76,45 @@ export const StatementModal = ({ navigation }: any) => {
     return mapped.reverse();
   }, [transactions, filterType]);
 
-  const handleExportStatement = useCallback(() => {
-    setSuccessConfig({
-      visible: true,
-      title: 'Export Complete',
-      subtitle: `Financial statement for ${settings.businessName} generated successfully!\nTotal Inflow: ${settings.currency} ${totalIncome.toLocaleString()}\nTotal Outflow: ${settings.currency} ${totalExpenses.toLocaleString()}\nNet Balance: ${settings.currency} ${netBalance.toLocaleString()}`,
-    });
-  }, [settings.businessName, settings.currency, totalIncome, totalExpenses, netBalance]);
+  const handleExportStatement = useCallback(async () => {
+    try {
+      const csvHeader = 'Date,Time,Description,Category,Type,Amount,Running Balance\n';
+      const csvRows = tableData
+        .map((t) => {
+          const typeStr = t.isCredit ? 'CREDIT' : t.type.toUpperCase();
+          return `"${t.date}","${t.time}","${t.description.replace(/"/g, '""')}","${t.category}","${typeStr}",${t.amount},${t.runningBalance}`;
+        })
+        .join('\n');
+
+      const summaryText = `FINANCIAL STATEMENT - ${settings.businessName.toUpperCase()}\nCurrency: ${settings.currency}\nTotal Inflow: +${settings.currency} ${totalIncome.toLocaleString()}\nTotal Outflow: -${settings.currency} ${totalExpenses.toLocaleString()}\nNet Balance: ${settings.currency} ${netBalance.toLocaleString()}\n\nTRANSACTION LEDGER:\n${csvHeader}${csvRows}`;
+
+      await Share.share({
+        title: `${settings.businessName} Financial Statement`,
+        message: summaryText,
+      });
+    } catch (error) {
+      Alert.alert('Export Error', 'Unable to share financial statement.');
+    }
+  }, [tableData, settings.businessName, settings.currency, totalIncome, totalExpenses, netBalance]);
+
+  const handleExportPDF = useCallback(async () => {
+    setIsExportingPDF(true);
+    try {
+      await generateFinancialStatementPDF({
+        businessName: settings.businessName,
+        ownerName: settings.ownerName,
+        currency: settings.currency,
+        totalIncome,
+        totalExpenses,
+        netBalance,
+        transactions: tableData,
+      });
+    } catch (error) {
+      Alert.alert('Export Error', 'Unable to generate PDF document.');
+    } finally {
+      setIsExportingPDF(false);
+    }
+  }, [settings, totalIncome, totalExpenses, netBalance, tableData]);
 
   const renderTableHeader = useMemo(
     () => (
@@ -184,16 +219,29 @@ export const StatementModal = ({ navigation }: any) => {
       <View style={styles.footerContainer}>
         <Pressable
           style={({ pressed }) => [styles.exportFullBtn, pressed && styles.pressedBtn]}
+          onPress={handleExportPDF}
+          disabled={isExportingPDF}
+          accessibilityRole="button"
+          accessibilityLabel="Export PDF Statement"
+        >
+          <Ionicons name="print-outline" size={20} color={COLORS.card} />
+          <Text style={styles.exportFullBtnText}>
+            {isExportingPDF ? 'Generating PDF...' : 'Export PDF Statement'}
+          </Text>
+        </Pressable>
+
+        <Pressable
+          style={({ pressed }) => [styles.exportCsvBtn, pressed && styles.pressed]}
           onPress={handleExportStatement}
           accessibilityRole="button"
-          accessibilityLabel="Export Full Financial Statement"
+          accessibilityLabel="Export CSV Data"
         >
-          <Ionicons name="document-text-outline" size={20} color={COLORS.card} />
-          <Text style={styles.exportFullBtnText}>Export Full Statement (CSV/PDF)</Text>
+          <Ionicons name="share-outline" size={18} color={COLORS.green} />
+          <Text style={styles.exportCsvBtnText}>Export CSV Ledger</Text>
         </Pressable>
       </View>
     ),
-    [handleExportStatement]
+    [handleExportPDF, isExportingPDF, handleExportStatement]
   );
 
   const renderTableRow = useCallback(
@@ -321,6 +369,11 @@ export const StatementModal = ({ navigation }: any) => {
         initialNumToRender={15}
         maxToRenderPerBatch={10}
         windowSize={5}
+        getItemLayout={(data, index) => ({
+          length: 48,
+          offset: 48 * index,
+          index,
+        })}
       />
 
       <SuccessModal
@@ -351,7 +404,11 @@ const styles = StyleSheet.create({
     borderColor: COLORS.divider,
   },
   closeBtn: {
-    padding: 4,
+    padding: 8,
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerTitle: {
     fontSize: 18,
@@ -507,6 +564,7 @@ const styles = StyleSheet.create({
   },
   footerContainer: {
     marginTop: 20,
+    gap: 10,
   },
   exportFullBtn: {
     flexDirection: 'row',
@@ -521,6 +579,22 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: COLORS.card,
+  },
+  exportCsvBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.greenBg,
+    borderColor: COLORS.green,
+    borderWidth: 1,
+    borderRadius: 14,
+    height: 48,
+    gap: 8,
+  },
+  exportCsvBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.green,
   },
   pressedBtn: {
     opacity: 0.85,

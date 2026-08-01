@@ -252,7 +252,11 @@ const styles = StyleSheet.create({
     borderColor: COLORS.divider,
   },
   headerBtn: {
-    padding: 4,
+    padding: 8,
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerTitle: {
     fontSize: 18,

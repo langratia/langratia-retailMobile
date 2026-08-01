@@ -9,6 +9,8 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as SecureStore from 'expo-secure-store';
+import * as LocalAuthentication from 'expo-local-authentication';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../store/useAppStore';
 import { COLORS, SHADOWS } from '../theme/theme';
@@ -20,8 +22,21 @@ export const LoginScreen = () => {
 
   const [pin, setPin] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [correctPin, setCorrectPin] = useState<string>('1234');
 
-  const correctPin = settings.securityPin || '1234';
+  React.useEffect(() => {
+    const loadPin = async () => {
+      try {
+        const storedPin = await SecureStore.getItemAsync('SECURITY_PIN');
+        if (storedPin) {
+          setCorrectPin(storedPin);
+        }
+      } catch (error) {
+        console.error('Failed to load secure PIN', error);
+      }
+    };
+    loadPin();
+  }, []);
 
   const handleKeyPress = useCallback(
     (digit: string) => {
@@ -72,18 +87,24 @@ export const LoginScreen = () => {
     }
   }, [pin, correctPin, login]);
 
-  const handleBiometricAuth = useCallback(() => {
-    Alert.alert(
-      'Biometric Fingerprint / Face ID',
-      `Authenticate to open ${settings.businessName || 'IVAN A.K.A Electronics'} POS?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Confirm Unlock',
-          onPress: () => login(),
-        },
-      ]
-    );
+  const handleBiometricAuth = useCallback(async () => {
+    const hasHardware = await LocalAuthentication.hasHardwareAsync();
+    const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+
+    if (!hasHardware || !isEnrolled) {
+      Alert.alert('Not Supported', 'Biometric authentication is not set up on this device.');
+      return;
+    }
+
+    const result = await LocalAuthentication.authenticateAsync({
+      promptMessage: `Unlock ${settings.businessName || 'IVAN A.K.A Electronics'}`,
+      fallbackLabel: 'Use PIN',
+      disableDeviceFallback: false,
+    });
+
+    if (result.success) {
+      login();
+    }
   }, [settings.businessName, login]);
 
   return (

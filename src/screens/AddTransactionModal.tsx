@@ -8,6 +8,7 @@ import {
   Pressable,
   Alert,
   Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -103,11 +104,15 @@ export const AddTransactionModal = ({ route, navigation }: any) => {
         </Pressable>
       </View>
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined} 
+        style={{ flex: 1 }}
       >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
         {/* Income / Expense Toggle Switch */}
         <View style={styles.toggleRow}>
           <Pressable
@@ -278,7 +283,8 @@ export const AddTransactionModal = ({ route, navigation }: any) => {
             Record {type === 'income' ? 'Income Inflow' : 'Expense Outflow'}
           </Text>
         </Pressable>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       {/* Tactile Success Pop Modal */}
       <SuccessModal
@@ -316,7 +322,11 @@ const styles = StyleSheet.create({
     borderColor: COLORS.divider,
   },
   closeBtn: {
-    padding: 4,
+    padding: 8,
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerTitle: {
     fontSize: 18,

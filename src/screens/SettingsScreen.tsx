@@ -10,6 +10,7 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as SecureStore from 'expo-secure-store';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../store/useAppStore';
 import { COLORS, SHADOWS } from '../theme/theme';
@@ -39,7 +40,21 @@ export const SettingsScreen = ({ navigation }: any) => {
     subtitle: '',
   });
 
-  const handleSave = useCallback(() => {
+  React.useEffect(() => {
+    const loadPin = async () => {
+      try {
+        const storedPin = await SecureStore.getItemAsync('SECURITY_PIN');
+        if (storedPin) {
+          setSecurityPin(storedPin);
+        }
+      } catch (error) {
+        console.error('Failed to load secure PIN', error);
+      }
+    };
+    loadPin();
+  }, []);
+
+  const handleSave = useCallback(async () => {
     const thresholdNum = parseInt(lowStockThreshold, 10);
     if (isNaN(thresholdNum) || thresholdNum < 0) {
       Alert.alert('Validation Error', 'Please enter a valid non-negative number for low stock threshold.');
@@ -49,6 +64,12 @@ export const SettingsScreen = ({ navigation }: any) => {
     if (!/^\d{4}$/.test(securityPin)) {
       Alert.alert('PIN Error', 'Security PIN must be exactly 4 numeric digits.');
       return;
+    }
+
+    try {
+      await SecureStore.setItemAsync('SECURITY_PIN', securityPin);
+    } catch (e) {
+      console.error('Failed to securely save PIN', e);
     }
 
     updateSettings({

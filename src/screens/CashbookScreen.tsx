@@ -244,6 +244,11 @@ export const CashbookScreen = ({ navigation }: any) => {
         initialNumToRender={12}
         maxToRenderPerBatch={10}
         windowSize={5}
+        getItemLayout={(data, index) => ({
+          length: 52,
+          offset: 52 * index,
+          index,
+        })}
       />
     </View>
   );

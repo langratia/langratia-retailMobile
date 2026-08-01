@@ -11,7 +11,7 @@ interface TransactionItemCardProps {
   isLastItem?: boolean;
 }
 
-export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
+export const TransactionItemCard: React.FC<TransactionItemCardProps> = React.memo(({
   transaction,
   currency = 'UGX',
   onPress,
@@ -93,7 +93,7 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
       <Ionicons name="chevron-forward" size={14} color={COLORS.textMuted} style={styles.chevron} />
     </Pressable>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {

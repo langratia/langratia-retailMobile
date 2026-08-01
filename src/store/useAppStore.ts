@@ -187,6 +187,14 @@ export const useAppStore = create<AppState>()(
     {
       name: 'business-balance-storage',
       storage: createJSONStorage(() => AsyncStorage),
+      partialize: (state) => ({
+        ...state,
+        settings: {
+          ...state.settings,
+          isLoggedIn: false, // Prevent auth bypass on restart
+          securityPin: '1234', // Don't persist real PIN in plain text
+        },
+      }),
     }
   )
 );

@@ -29,7 +29,7 @@ interface ProductItemCardProps {
   onPressDetails?: () => void;
 }
 
-export const ProductItemCard: React.FC<ProductItemCardProps> = ({
+export const ProductItemCard: React.FC<ProductItemCardProps> = React.memo(({
   product,
   currency = 'UGX',
   onAddStock,
@@ -185,7 +185,7 @@ export const ProductItemCard: React.FC<ProductItemCardProps> = ({
       )}
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   card: {
