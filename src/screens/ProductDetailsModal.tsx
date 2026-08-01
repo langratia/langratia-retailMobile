@@ -6,8 +6,11 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Platform,
+  StatusBar as RNStatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../store/useAppStore';
 import { COLORS, SHADOWS } from '../theme/theme';
 import { Badge } from '../components/Badge';
@@ -15,12 +18,14 @@ import { Badge } from '../components/Badge';
 export const ProductDetailsModal = ({ route, navigation }: any) => {
   const { productId } = route.params;
   const { products, settings, adjustStock, deleteProduct } = useAppStore();
+  const insets = useSafeAreaInsets();
+  const topPadding = Platform.OS === 'ios' ? insets.top : 8;
 
   const product = products.find((p) => p.id === productId);
 
   if (!product) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { paddingTop: topPadding }]}>
         <Text style={styles.emptyText}>Product not found.</Text>
       </View>
     );
@@ -49,7 +54,7 @@ export const ProductDetailsModal = ({ route, navigation }: any) => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: topPadding }]}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.7}>

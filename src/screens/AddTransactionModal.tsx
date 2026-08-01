@@ -7,8 +7,11 @@ import {
   TextInput,
   TouchableOpacity,
   Alert,
+  Platform,
+  StatusBar as RNStatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../store/useAppStore';
 import { TransactionType } from '../types';
 import { COLORS } from '../theme/theme';
@@ -16,6 +19,8 @@ import { COLORS } from '../theme/theme';
 export const AddTransactionModal = ({ route, navigation }: any) => {
   const defaultType: TransactionType = route.params?.defaultType || 'income';
   const { addTransaction, settings } = useAppStore();
+  const insets = useSafeAreaInsets();
+  const topPadding = Platform.OS === 'ios' ? insets.top : 8;
 
   const [type, setType] = useState<TransactionType>(defaultType);
   const [amount, setAmount] = useState('');
@@ -49,7 +54,7 @@ export const AddTransactionModal = ({ route, navigation }: any) => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: topPadding }]}>
       {/* Modal Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.7}>
@@ -61,7 +66,7 @@ export const AddTransactionModal = ({ route, navigation }: any) => {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         {/* Income / Expense Toggle Switch */}
         <View style={styles.toggleRow}>
           <TouchableOpacity
@@ -100,7 +105,7 @@ export const AddTransactionModal = ({ route, navigation }: any) => {
             }}
           >
             <Ionicons
-              name="upload-outline"
+              name="arrow-up-circle-outline"
               size={18}
               color={type === 'expense' ? COLORS.red : COLORS.textSecondary}
             />

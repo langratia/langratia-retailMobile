@@ -34,11 +34,17 @@ export const CashbookScreen = ({ navigation }: any) => {
 
   const cashBalance = totalIncome - totalExpenses;
 
+  const todayFormatted = new Date().toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+
   const filteredTransactions = transactions.filter((tx) => {
     if (selectedFilter === 'Credit Sales') return tx.isCredit || tx.category === 'Credit Sales';
     if (selectedFilter === 'Income') return tx.type === 'income';
     if (selectedFilter === 'Expense') return tx.type === 'expense';
-    if (selectedFilter === 'Today') return tx.date === 'Today' || tx.date.includes(new Date().getDate().toString());
+    if (selectedFilter === 'Today') return tx.date === 'Today' || tx.date === todayFormatted;
     return true;
   });
 
@@ -52,7 +58,7 @@ export const CashbookScreen = ({ navigation }: any) => {
     <View style={styles.container}>
       <Header
         title="Cash Book"
-        showNotification={false}
+        showNotification={true}
         rightAction={
           <TouchableOpacity
             style={styles.exportBtn}
@@ -103,7 +109,7 @@ export const CashbookScreen = ({ navigation }: any) => {
               title="Total Expenses"
               value={`${settings.currency}${totalExpenses.toLocaleString('en-US', { minimumFractionDigits: 0 })}`}
               trendText={`${transactions.filter(t => t.type === 'expense').length} Expense entries`}
-              iconName="upload-outline"
+              iconName="arrow-up-circle-outline"
               iconColor={COLORS.red}
               iconBgColor={COLORS.redBg}
             />
@@ -196,7 +202,7 @@ const styles = StyleSheet.create({
   subHeader: {
     fontSize: 13,
     color: COLORS.textSecondary,
-    marginTop: -8,
+    marginTop: 16,
     marginBottom: 16,
   },
   exportBtn: {

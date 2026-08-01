@@ -7,13 +7,18 @@ import {
   TextInput,
   TouchableOpacity,
   Alert,
+  Platform,
+  StatusBar as RNStatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../store/useAppStore';
 import { COLORS, SHADOWS } from '../theme/theme';
 
 export const SettingsScreen = ({ navigation }: any) => {
   const { settings, updateSettings, logout } = useAppStore();
+  const insets = useSafeAreaInsets();
+  const topPadding = Platform.OS === 'ios' ? insets.top : 8;
 
   const [businessName, setBusinessName] = useState(settings.businessName);
   const [ownerName, setOwnerName] = useState(settings.ownerName);
@@ -32,7 +37,7 @@ export const SettingsScreen = ({ navigation }: any) => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: topPadding }]}>
       {/* Modal / Screen Header */}
       <View style={styles.modalHeader}>
         <TouchableOpacity onPress={() => navigation?.goBack()} activeOpacity={0.7}>
@@ -42,7 +47,7 @@ export const SettingsScreen = ({ navigation }: any) => {
         <View style={{ width: 26 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <Text style={styles.subHeader}>Configure business profile and preferences</Text>
 
         {/* Business Settings Card */}

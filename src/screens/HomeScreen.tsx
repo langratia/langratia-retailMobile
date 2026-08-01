@@ -54,8 +54,14 @@ export const HomeScreen = ({ navigation }: any) => {
 
   const cashBalance = totalIncome - totalExpense;
 
+  const todayFormatted = new Date().toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+
   const todayIncomeTxs = transactions.filter(
-    (tx) => tx.type === 'income' && (tx.date === 'Today' || tx.date.includes(new Date().getDate().toString()))
+    (tx) => tx.type === 'income' && (tx.date === 'Today' || tx.date === todayFormatted)
   );
   const todaysSales = todayIncomeTxs.reduce((acc, tx) => acc + tx.amount, 0);
   const todaysProfit = todaysSales * 0.25; // estimated net margin
@@ -69,6 +75,9 @@ export const HomeScreen = ({ navigation }: any) => {
   // Weekly Sales Bar Chart Data calculation
   const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const maxWeeklySale = Math.max(...transactions.map(t => t.amount), 50000);
+
+  // Total Business Assets = Cash Balance + Stock Value
+  const totalBusinessAssets = cashBalance + totalStockValue;
 
   return (
     <View style={styles.container}>
@@ -96,85 +105,106 @@ export const HomeScreen = ({ navigation }: any) => {
           </Text>
         </View>
 
-        {/* 2x2 Stat Cards Grid */}
-        <View style={styles.gridContainer}>
-          <View style={styles.gridRow}>
-            <StatCard
-              title="Cash Balance"
-              value={`${settings.currency} ${cashBalance.toLocaleString('en-US', { minimumFractionDigits: 0 })}`}
-              trendText={`${transactions.length} total entries`}
-              iconName="wallet-outline"
-              iconColor={COLORS.green}
-              iconBgColor={COLORS.greenBg}
-            />
-            <StatCard
-              title="Stock Value"
-              value={`${settings.currency} ${totalStockValue.toLocaleString('en-US', { minimumFractionDigits: 0 })}`}
-              trendText={`${totalStockItems} items in stock`}
-              iconName="cube-outline"
-              iconColor={COLORS.blue}
-              iconBgColor={COLORS.blueBg}
-            />
+        {/* Executive Hero Financial Card */}
+        <View style={styles.heroCard}>
+          <View style={styles.heroHeader}>
+            <View style={styles.heroTitleRow}>
+              <Ionicons name="pie-chart" size={18} color={COLORS.green} />
+              <Text style={styles.heroTitle}>Total Business Assets</Text>
+            </View>
+            <View style={styles.liveBadge}>
+              <View style={styles.liveDot} />
+              <Text style={styles.liveText}>Live</Text>
+            </View>
           </View>
 
-          <View style={styles.gridRow}>
-            <StatCard
-              title="Today's Sales"
-              value={`${settings.currency} ${todaysSales.toLocaleString('en-US', { minimumFractionDigits: 0 })}`}
-              trendText={`${todayIncomeTxs.length} sales today`}
-              iconName="cart-outline"
-              iconColor={COLORS.amber}
-              iconBgColor={COLORS.amberBg}
-            />
-            <StatCard
-              title="Today's Est. Profit"
-              value={`${settings.currency} ${todaysProfit.toLocaleString('en-US', { minimumFractionDigits: 0 })}`}
-              trendText="~25% net margin"
-              iconName="trending-up-outline"
-              iconColor={COLORS.green}
-              iconBgColor={COLORS.greenBg}
-            />
+          <Text style={styles.heroAmount} numberOfLines={1} adjustsFontSizeToFit={true}>
+            {settings.currency} {totalBusinessAssets.toLocaleString('en-US', { minimumFractionDigits: 0 })}
+          </Text>
+          <Text style={styles.heroSubtitle}>
+            Cash Balance ({settings.currency} {cashBalance.toLocaleString()}) + Stock Value ({settings.currency} {totalStockValue.toLocaleString()})
+          </Text>
+
+          <View style={styles.heroDivider} />
+
+          {/* Sub-metrics breakdown inside Hero Card */}
+          <View style={styles.heroMetricsRow}>
+            <View style={styles.heroMetricItem}>
+              <Text style={styles.heroMetricLabel}>💵 Cash Balance</Text>
+              <Text style={[styles.heroMetricVal, { color: COLORS.green }]}>
+                {settings.currency} {cashBalance.toLocaleString()}
+              </Text>
+            </View>
+
+            <View style={styles.heroMetricDivider} />
+
+            <View style={styles.heroMetricItem}>
+              <Text style={styles.heroMetricLabel}>📦 Stock Value</Text>
+              <Text style={[styles.heroMetricVal, { color: COLORS.blue }]}>
+                {settings.currency} {totalStockValue.toLocaleString()}
+              </Text>
+            </View>
+
+            <View style={styles.heroMetricDivider} />
+
+            <View style={styles.heroMetricItem}>
+              <Text style={styles.heroMetricLabel}>🛒 Today's Sales</Text>
+              <Text style={[styles.heroMetricVal, { color: COLORS.amber }]}>
+                {settings.currency} {todaysSales.toLocaleString()}
+              </Text>
+            </View>
           </View>
         </View>
 
-        {/* Quick Actions */}
+        {/* Quick Actions Row */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
         </View>
 
-        <View style={styles.quickActionsContainer}>
-          <View style={styles.gridRow}>
-            <QuickActionButton
-              title="Add Stock"
-              iconName="add-circle-outline"
-              iconColor={COLORS.green}
-              bgColor={COLORS.greenBg}
-              onPress={() => navigation.navigate('AddEditProduct')}
-            />
-            <QuickActionButton
-              title="Record Sale"
-              iconName="cart-outline"
-              iconColor={COLORS.blue}
-              bgColor={COLORS.blueBg}
-              onPress={() => navigation.navigate('RecordSale')}
-            />
-          </View>
-          <View style={styles.gridRow}>
-            <QuickActionButton
-              title="Add Expense"
-              iconName="receipt-outline"
-              iconColor={COLORS.amber}
-              bgColor={COLORS.amberBg}
-              onPress={() => navigation.navigate('AddTransaction', { defaultType: 'expense' })}
-            />
-            <QuickActionButton
-              title="View Reports"
-              iconName="pie-chart-outline"
-              iconColor={COLORS.purple}
-              bgColor={COLORS.purpleBg}
-              onPress={() => navigation.navigate('Reports')}
-            />
-          </View>
+        <View style={styles.quickActionPillRow}>
+          <TouchableOpacity
+            style={styles.actionPill}
+            activeOpacity={0.7}
+            onPress={() => navigation.navigate('AddEditProduct')}
+          >
+            <View style={[styles.actionIconCircle, { backgroundColor: COLORS.greenBg }]}>
+              <Ionicons name="add-circle" size={20} color={COLORS.green} />
+            </View>
+            <Text style={styles.actionPillText}>Add Stock</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.actionPill}
+            activeOpacity={0.7}
+            onPress={() => navigation.navigate('RecordSale')}
+          >
+            <View style={[styles.actionIconCircle, { backgroundColor: COLORS.blueBg }]}>
+              <Ionicons name="cart" size={20} color={COLORS.blue} />
+            </View>
+            <Text style={styles.actionPillText}>Record Sale</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.actionPill}
+            activeOpacity={0.7}
+            onPress={() => navigation.navigate('AddTransaction', { defaultType: 'expense' })}
+          >
+            <View style={[styles.actionIconCircle, { backgroundColor: COLORS.amberBg }]}>
+              <Ionicons name="receipt" size={20} color={COLORS.amber} />
+            </View>
+            <Text style={styles.actionPillText}>Add Expense</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.actionPill}
+            activeOpacity={0.7}
+            onPress={() => navigation.navigate('Reports')}
+          >
+            <View style={[styles.actionIconCircle, { backgroundColor: COLORS.purpleBg }]}>
+              <Ionicons name="pie-chart" size={20} color={COLORS.purple} />
+            </View>
+            <Text style={styles.actionPillText}>Reports</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Low Stock Alerts */}
@@ -358,10 +388,10 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingBottom: 40,
+    paddingBottom: 110,
   },
   greetingContainer: {
-    marginTop: 12,
+    marginTop: 20,
     marginBottom: 20,
   },
   greetingTitle: {
@@ -374,13 +404,90 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.textSecondary,
   },
-  gridContainer: {
-    gap: 12,
+  heroCard: {
+    backgroundColor: '#0F172A',
+    borderRadius: 20,
+    padding: 20,
     marginBottom: 24,
+    ...SHADOWS.medium,
   },
-  gridRow: {
+  heroHeader: {
     flexDirection: 'row',
-    gap: 12,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  heroTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  heroTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#94A3B8',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  liveBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: COLORS.green,
+  },
+  liveText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.green,
+  },
+  heroAmount: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginBottom: 4,
+    letterSpacing: -0.5,
+  },
+  heroSubtitle: {
+    fontSize: 11,
+    color: '#94A3B8',
+    marginBottom: 16,
+  },
+  heroDivider: {
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    marginBottom: 14,
+  },
+  heroMetricsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  heroMetricItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  heroMetricDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  heroMetricLabel: {
+    fontSize: 11,
+    color: '#94A3B8',
+    marginBottom: 4,
+  },
+  heroMetricVal: {
+    fontSize: 13,
+    fontWeight: '700',
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -398,9 +505,36 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.green,
   },
-  quickActionsContainer: {
-    gap: 12,
+  quickActionPillRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 8,
     marginBottom: 24,
+  },
+  actionPill: {
+    flex: 1,
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 6,
+    alignItems: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderColor: COLORS.divider,
+    ...SHADOWS.small,
+  },
+  actionIconCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+    textAlign: 'center',
   },
   viewAllBtn: {
     paddingVertical: 8,

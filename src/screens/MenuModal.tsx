@@ -6,13 +6,18 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
+  Platform,
+  StatusBar as RNStatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../store/useAppStore';
 import { COLORS, SHADOWS } from '../theme/theme';
 
 export const MenuModal = ({ navigation }: any) => {
   const { settings, logout, products, transactions } = useAppStore();
+  const insets = useSafeAreaInsets();
+  const topPadding = Platform.OS === 'ios' ? insets.top : 8;
 
   const handleExportData = () => {
     Alert.alert(
@@ -29,7 +34,7 @@ export const MenuModal = ({ navigation }: any) => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: topPadding }]}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.7}>
@@ -79,6 +84,25 @@ export const MenuModal = ({ navigation }: any) => {
             <View style={styles.menuTextContent}>
               <Text style={styles.menuTitle}>Business Settings</Text>
               <Text style={styles.menuSub}>Configure business name, stock alerts</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
+          </TouchableOpacity>
+
+          {/* Analytics & Reports */}
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => {
+              navigation.goBack();
+              navigation.navigate('Reports');
+            }}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.iconBox, { backgroundColor: COLORS.purpleBg }]}>
+              <Ionicons name="stats-chart-outline" size={22} color={COLORS.purple} />
+            </View>
+            <View style={styles.menuTextContent}>
+              <Text style={styles.menuTitle}>Analytics & Reports</Text>
+              <Text style={styles.menuSub}>View business health and metrics</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
           </TouchableOpacity>

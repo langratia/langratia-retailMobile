@@ -8,8 +8,11 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  Platform,
+  StatusBar as RNStatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../store/useAppStore';
 import { ProductCategory } from '../types';
 import { COLORS } from '../theme/theme';
@@ -17,6 +20,8 @@ import { COLORS } from '../theme/theme';
 export const AddEditProductModal = ({ route, navigation }: any) => {
   const existingProduct = route.params?.product;
   const isEditing = !!existingProduct;
+  const insets = useSafeAreaInsets();
+  const topPadding = Platform.OS === 'ios' ? insets.top : 8;
 
   const { addProduct, updateProduct, settings } = useAppStore();
 
@@ -35,7 +40,7 @@ export const AddEditProductModal = ({ route, navigation }: any) => {
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const categories: ProductCategory[] = ['Smartphones', 'Feature Phones', 'Accessories', 'Audio', 'Storage', 'Wearables', 'Electronics', 'General'];
+  const categories: ProductCategory[] = ['Smartphones', 'Feature Phones', 'Accessories', 'Audio', 'Storage', 'Wearables', 'Electronics', 'Printery Services', 'General'];
 
   const handleSave = () => {
     if (!name.trim()) {
@@ -82,7 +87,7 @@ export const AddEditProductModal = ({ route, navigation }: any) => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: topPadding }]}>
       {/* Modal Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.7}>
@@ -92,7 +97,7 @@ export const AddEditProductModal = ({ route, navigation }: any) => {
         <View style={{ width: 26 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         {/* Name */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Product Name</Text>

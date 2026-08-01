@@ -1,4 +1,4 @@
-export type ProductCategory = 'Smartphones' | 'Accessories' | 'Electronics' | 'General' | 'Feature Phones' | 'Audio' | 'Storage' | 'Wearables';
+export type ProductCategory = 'Smartphones' | 'Accessories' | 'Electronics' | 'General' | 'Feature Phones' | 'Audio' | 'Storage' | 'Wearables' | 'Printery Services';
 
 export interface Product {
   id: string;
@@ -39,13 +39,14 @@ export type RootTabParamList = {
   Home: undefined;
   Inventory: undefined;
   Cashbook: undefined;
-  Reports: undefined;
+  Printery: undefined;
   Settings: undefined;
 };
 
 export type RootStackParamList = {
   MainTabs: undefined;
   Login: undefined;
+  Reports: undefined;
   AddEditProduct: { product?: Product };
   AddTransaction: { defaultType?: TransactionType };
   RecordSale: { productId?: string };

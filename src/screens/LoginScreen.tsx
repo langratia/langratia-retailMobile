@@ -7,19 +7,26 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  StatusBar as RNStatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../store/useAppStore';
 import { COLORS, SHADOWS } from '../theme/theme';
 
 export const LoginScreen = () => {
   const { login } = useAppStore();
+  const insets = useSafeAreaInsets();
+  const topPadding = Platform.OS === 'ios' ? insets.top : 8;
   const [username, setUsername] = useState('ahmed@retail.com');
   const [password, setPassword] = useState('••••••••');
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[
+        styles.container,
+        { paddingTop: topPadding, paddingBottom: Math.max(insets.bottom, 16) },
+      ]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={styles.content}>

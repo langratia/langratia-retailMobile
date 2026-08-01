@@ -8,13 +8,18 @@ import {
   Alert,
   TextInput,
   ActivityIndicator,
+  Platform,
+  StatusBar as RNStatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../store/useAppStore';
 import { COLORS, SHADOWS } from '../theme/theme';
 
 export const RecordSaleModal = ({ navigation }: any) => {
   const { products, recordSale, settings } = useAppStore();
+  const insets = useSafeAreaInsets();
+  const topPadding = Platform.OS === 'ios' ? insets.top : 8;
 
   const availableProducts = products.filter((p) => p.quantity > 0);
 
@@ -94,7 +99,7 @@ export const RecordSaleModal = ({ navigation }: any) => {
     : 0;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: topPadding }]}>
       {/* Modal Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.7}>
@@ -104,7 +109,7 @@ export const RecordSaleModal = ({ navigation }: any) => {
         <View style={{ width: 26 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         {availableProducts.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Ionicons name="alert-circle-outline" size={48} color={COLORS.amber} />

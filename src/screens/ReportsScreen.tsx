@@ -29,7 +29,7 @@ export const ReportsScreen = ({ navigation }: any) => {
     <View style={styles.container}>
       <Header
         title="Reports & Financials"
-        showNotification={false}
+        showNotification={true}
         rightAction={
           <TouchableOpacity
             style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
@@ -178,12 +178,12 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingBottom: 40,
+    paddingBottom: 110,
   },
   subHeader: {
     fontSize: 13,
     color: COLORS.textSecondary,
-    marginTop: -8,
+    marginTop: 16,
     marginBottom: 16,
   },
   highlightCard: {

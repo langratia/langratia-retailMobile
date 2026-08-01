@@ -18,11 +18,17 @@
       },
       "predictiveBackGestureEnabled": false
     },
+    "androidStatusBar": {
+      "barStyle": "dark-content",
+      "backgroundColor": "#F8FAFC",
+      "translucent": false
+    },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-asset"
+      "expo-asset",
+      "expo-font"
     ]
   }
 }

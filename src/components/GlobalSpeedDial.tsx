@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, SHADOWS } from '../theme/theme';
 
 const { width, height } = Dimensions.get('window');
@@ -18,6 +19,9 @@ export const GlobalSpeedDial = () => {
   const [isOpen, setIsOpen] = useState(false);
   const animation = useRef(new Animated.Value(0)).current;
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
+
+  const fabBottom = 72 + Math.max(insets.bottom, 10);
 
   const toggleMenu = () => {
     const toValue = isOpen ? 0 : 1;
@@ -74,7 +78,7 @@ export const GlobalSpeedDial = () => {
         </TouchableWithoutFeedback>
       )}
 
-      <View style={styles.container}>
+      <View style={[styles.container, { bottom: fabBottom }]}>
         {/* Sub-FAB 3: Add Expense */}
         <Animated.View style={[styles.subFabContainer, getSubFabStyle(2)]}>
           <Text style={styles.label}>Add Expense</Text>

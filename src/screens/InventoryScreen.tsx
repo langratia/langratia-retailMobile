@@ -66,7 +66,7 @@ export const InventoryScreen = ({ route, navigation }: any) => {
     <View style={styles.container}>
       <Header
         title="Inventory"
-        showNotification={false}
+        showNotification={true}
       />
 
       <ScrollView
@@ -143,7 +143,7 @@ export const InventoryScreen = ({ route, navigation }: any) => {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{ flexDirection: 'row', gap: 8, marginVertical: 12 }}
         >
-          {['All', 'Low Stock', 'Smartphones', 'Accessories', 'Electronics', 'General'].map((cat) => {
+          {['All', 'Low Stock', 'Smartphones', 'Feature Phones', 'Accessories', 'Audio', 'Storage', 'Wearables', 'Electronics', 'General'].map((cat) => {
             const isActive = categoryFilter === cat;
             const isLowStock = cat === 'Low Stock';
             return (
@@ -241,7 +241,7 @@ const styles = StyleSheet.create({
   subHeader: {
     fontSize: 13,
     color: COLORS.textSecondary,
-    marginTop: -8,
+    marginTop: 16,
     marginBottom: 16,
   },
   searchRow: {

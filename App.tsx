@@ -1,5 +1,5 @@
 import React from 'react';
-import { StatusBar } from 'expo-status-bar';
+import { StatusBar, View, ActivityIndicator } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import {
@@ -9,7 +9,6 @@ import {
   Inter_600SemiBold,
   Inter_700Bold,
 } from '@expo-google-fonts/inter';
-import { View, ActivityIndicator } from 'react-native';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { COLORS } from './src/theme/theme';
 
@@ -32,7 +31,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <NavigationContainer>
-        <StatusBar style="dark" />
+        <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} translucent={false} />
         <AppNavigator />
       </NavigationContainer>
     </SafeAreaProvider>

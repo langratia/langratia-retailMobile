@@ -6,13 +6,18 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Platform,
+  StatusBar as RNStatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../store/useAppStore';
 import { COLORS, SHADOWS } from '../theme/theme';
 
 export const StatementModal = ({ navigation }: any) => {
   const { transactions, settings } = useAppStore();
+  const insets = useSafeAreaInsets();
+  const topPadding = Platform.OS === 'ios' ? insets.top : 8;
   const [filterType, setFilterType] = useState<'all' | 'income' | 'expense' | 'credit'>('all');
 
   const filteredTransactions = transactions.filter((tx) => {
@@ -55,7 +60,7 @@ export const StatementModal = ({ navigation }: any) => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: topPadding }]}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.7}>
