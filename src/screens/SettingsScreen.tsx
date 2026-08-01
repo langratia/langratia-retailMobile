@@ -17,7 +17,7 @@ import { COLORS, SHADOWS } from '../theme/theme';
 const SUPPORTED_CURRENCIES = ['UGX', 'USD', 'KES', 'EUR', 'NGN', 'GHS'];
 
 export const SettingsScreen = ({ navigation }: any) => {
-  const { settings, updateSettings, logout, products, transactions } = useAppStore();
+  const { settings, updateSettings, resetAllData, logout, products, transactions } = useAppStore();
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === 'ios' ? insets.top : 8;
 
@@ -43,6 +43,26 @@ export const SettingsScreen = ({ navigation }: any) => {
     });
     Alert.alert('Settings Saved! 🎉', 'Your business configuration has been updated successfully.');
   }, [businessName, ownerName, currency, lowStockThreshold, updateSettings]);
+
+  const handleResetData = useCallback(() => {
+    Alert.alert(
+      'Reset All Data',
+      'Are you sure you want to delete all products and sales data? This will clear all records and set the app to a clean state for IVAN A.K.A Electronics.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Wipe & Reset',
+          style: 'destructive',
+          onPress: () => {
+            resetAllData();
+            setBusinessName('IVAN A.K.A Electronics');
+            setOwnerName('Ivan');
+            Alert.alert('Data Wiped', 'All app data has been reset to a brand new state!');
+          },
+        },
+      ]
+    );
+  }, [resetAllData]);
 
   const handleLogout = useCallback(() => {
     if (navigation?.canGoBack()) {
@@ -84,7 +104,7 @@ export const SettingsScreen = ({ navigation }: any) => {
               style={styles.input}
               value={businessName}
               onChangeText={setBusinessName}
-              placeholder="e.g. Retail Store"
+              placeholder="e.g. IVAN A.K.A Electronics"
               placeholderTextColor={COLORS.textMuted}
               accessibilityLabel="Business name input"
             />
@@ -96,7 +116,7 @@ export const SettingsScreen = ({ navigation }: any) => {
               style={styles.input}
               value={ownerName}
               onChangeText={setOwnerName}
-              placeholder="e.g. Ahmed"
+              placeholder="e.g. Ivan"
               placeholderTextColor={COLORS.textMuted}
               accessibilityLabel="Owner name input"
             />
@@ -165,6 +185,23 @@ export const SettingsScreen = ({ navigation }: any) => {
           >
             <Ionicons name="checkmark-circle-outline" size={20} color={COLORS.card} />
             <Text style={styles.saveBtnText}>Save Settings</Text>
+          </Pressable>
+        </View>
+
+        {/* Data Maintenance Card */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Data Reset & Maintenance</Text>
+          <Text style={styles.helperText}>
+            Current stored products: {products.length} • Stored transactions: {transactions.length}
+          </Text>
+          <Pressable
+            style={({ pressed }) => [styles.resetBtn, pressed && styles.pressed]}
+            onPress={handleResetData}
+            accessibilityRole="button"
+            accessibilityLabel="Reset all app data"
+          >
+            <Ionicons name="trash-bin-outline" size={18} color={COLORS.red} />
+            <Text style={styles.resetBtnText}>Wipe & Reset All App Data</Text>
           </Pressable>
         </View>
 
@@ -325,6 +362,24 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: COLORS.card,
+  },
+  resetBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.redBg,
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.3)',
+    marginTop: 4,
+  },
+  resetBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.red,
   },
   logoutBtn: {
     flexDirection: 'row',

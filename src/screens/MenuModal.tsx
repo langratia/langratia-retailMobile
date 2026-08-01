@@ -191,7 +191,7 @@ export const MenuModal = ({ navigation }: any) => {
 
         {/* Version Footer */}
         <View style={styles.versionFooter}>
-          <Text style={styles.versionText}>v1.2.0 • Langratia Enterprise Retail</Text>
+          <Text style={styles.versionText}>v1.2.0 • IVAN A.K.A Electronics POS</Text>
         </View>
       </ScrollView>
     </View>

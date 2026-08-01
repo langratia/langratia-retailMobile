@@ -6,6 +6,7 @@ import {
   Pressable,
   Platform,
   Alert,
+  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,7 +16,7 @@ import { COLORS, SHADOWS } from '../theme/theme';
 export const LoginScreen = () => {
   const { login, settings } = useAppStore();
   const insets = useSafeAreaInsets();
-  const topPadding = Platform.OS === 'ios' ? insets.top + 20 : 28;
+  const topPadding = Platform.OS === 'ios' ? insets.top + 16 : 24;
 
   const [pin, setPin] = useState<string>('');
 
@@ -43,11 +44,11 @@ export const LoginScreen = () => {
 
   const handleBiometricAuth = useCallback(() => {
     Alert.alert(
-      'Biometric Authentication',
-      `Unlocking ${settings.businessName} via Fingerprint / Face ID...`,
+      'Biometric Unlock',
+      `Unlocking ${settings.businessName || 'IVAN A.K.A Electronics'} via Fingerprint / Face ID...`,
       [
         {
-          text: 'Unlock',
+          text: 'Unlock App',
           onPress: () => login(),
         },
       ]
@@ -61,15 +62,56 @@ export const LoginScreen = () => {
         { paddingTop: topPadding, paddingBottom: Math.max(insets.bottom, 20) },
       ]}
     >
-      <View style={styles.content}>
-        {/* Brand Icon & Name */}
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+      >
+        {/* Top Splash Header Badge */}
+        <View style={styles.splashHeaderBadge}>
+          <View style={styles.statusDot} />
+          <Text style={styles.splashBadgeText}>CLIENT EDITION • 100% OFFLINE</Text>
+        </View>
+
+        {/* Brand Logo & Splash Banner */}
         <View style={styles.brandBox}>
-          <View style={styles.logoCircle}>
-            <Ionicons name="wallet" size={40} color={COLORS.green} />
+          {/* Custom Brand Logo emblem */}
+          <View style={styles.logoOuterGlow}>
+            <View style={styles.logoMiddleRing}>
+              <View style={styles.logoInnerCircle}>
+                <Ionicons name="hardware-chip-outline" size={42} color={COLORS.green} />
+                <View style={styles.logoMiniIcon}>
+                  <Ionicons name="flash" size={14} color="#FFF" />
+                </View>
+              </View>
+            </View>
           </View>
-          <Text style={styles.appName}>{settings.businessName || 'IVAN A.K.A Electronics'}</Text>
+
+          {/* Electronics Category Icons Strip */}
+          <View style={styles.techIconsRow}>
+            <View style={styles.techPill}>
+              <Ionicons name="phone-portrait-outline" size={14} color={COLORS.green} />
+              <Text style={styles.techPillText}>Phones</Text>
+            </View>
+            <View style={styles.techPill}>
+              <Ionicons name="headset-outline" size={14} color={COLORS.green} />
+              <Text style={styles.techPillText}>Audio</Text>
+            </View>
+            <View style={styles.techPill}>
+              <Ionicons name="laptop-outline" size={14} color={COLORS.green} />
+              <Text style={styles.techPillText}>Gadgets</Text>
+            </View>
+          </View>
+
+          <Text style={styles.appName}>
+            {settings.businessName || 'IVAN A.K.A Electronics'}
+          </Text>
+          <Text style={styles.appSubTitle}>RETAIL & ELECTRONICS MANAGEMENT SYSTEM</Text>
+
+          <View style={styles.dividerLine} />
+
           <Text style={styles.appTagline}>
-            Enter 4-digit Application PIN or use Biometrics to unlock
+            Enter 4-digit PIN or use Biometrics to open application
           </Text>
         </View>
 
@@ -121,7 +163,6 @@ export const LoginScreen = () => {
               onPress={handleBiometricAuth}
               accessibilityRole="button"
               accessibilityLabel="Unlock with Fingerprint or Face ID"
-              accessibilityHint="Triggers device biometric security unlock"
             >
               <Ionicons name="finger-print-outline" size={28} color={COLORS.green} />
             </Pressable>
@@ -153,7 +194,7 @@ export const LoginScreen = () => {
           </View>
         </View>
 
-        {/* Quick Direct Unlock Option */}
+        {/* Direct Unlock Button */}
         <Pressable
           style={({ pressed }) => [
             styles.quickUnlockBtn,
@@ -161,12 +202,19 @@ export const LoginScreen = () => {
           ]}
           onPress={login}
           accessibilityRole="button"
-          accessibilityLabel="Quick unlock app"
+          accessibilityLabel="Open Application Now"
         >
-          <Ionicons name="lock-open-outline" size={18} color={COLORS.green} />
-          <Text style={styles.quickUnlockText}>Quick Unlock</Text>
+          <Ionicons name="power-outline" size={20} color="#FFFFFF" />
+          <Text style={styles.quickUnlockText}>ENTER APPLICATION</Text>
         </Pressable>
-      </View>
+
+        {/* System Footer */}
+        <View style={styles.footerInfo}>
+          <Text style={styles.footerText}>
+            Powered by IVAN A.K.A Electronics POS • Client Edition
+          </Text>
+        </View>
+      </ScrollView>
     </View>
   );
 };
@@ -175,45 +223,139 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-    justifyContent: 'center',
   },
-  content: {
-    paddingHorizontal: 28,
+  scrollContent: {
     alignItems: 'center',
+    paddingHorizontal: 28,
+    paddingVertical: 12,
+  },
+  splashHeaderBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.greenBg,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+    marginBottom: 20,
+    gap: 8,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.green,
+  },
+  splashBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.green,
+    letterSpacing: 0.5,
   },
   brandBox: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
+    width: '100%',
   },
-  logoCircle: {
-    width: 76,
-    height: 76,
-    borderRadius: 38,
+  logoOuterGlow: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: 'rgba(16, 185, 129, 0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.2)',
+  },
+  logoMiddleRing: {
+    width: 82,
+    height: 82,
+    borderRadius: 41,
     backgroundColor: COLORS.greenBg,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 14,
-    borderWidth: 1.5,
+    borderWidth: 2,
     borderColor: COLORS.green,
-    ...SHADOWS.small,
+    ...SHADOWS.medium,
+  },
+  logoInnerCircle: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: COLORS.card,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  logoMiniIcon: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    backgroundColor: COLORS.green,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.card,
+  },
+  techIconsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 14,
+  },
+  techPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: COLORS.card,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.divider,
+  },
+  techPillText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
   },
   appName: {
     fontSize: 24,
     fontWeight: '800',
     color: COLORS.textPrimary,
-    marginBottom: 6,
+    marginBottom: 4,
+    textAlign: 'center',
+    letterSpacing: 0.3,
+  },
+  appSubTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.green,
+    letterSpacing: 1.2,
+    marginBottom: 12,
     textAlign: 'center',
   },
+  dividerLine: {
+    width: 60,
+    height: 3,
+    backgroundColor: COLORS.green,
+    borderRadius: 2,
+    marginBottom: 12,
+  },
   appTagline: {
-    fontSize: 13,
+    fontSize: 12,
     color: COLORS.textSecondary,
     textAlign: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
   },
   pinIndicatorRow: {
     flexDirection: 'row',
     gap: 16,
-    marginBottom: 32,
+    marginBottom: 24,
     alignItems: 'center',
   },
   pinDot: {
@@ -227,10 +369,11 @@ const styles = StyleSheet.create({
   pinDotFilled: {
     backgroundColor: COLORS.green,
     borderColor: COLORS.green,
+    transform: [{ scale: 1.1 }],
   },
   keypadGrid: {
-    gap: 14,
-    marginBottom: 24,
+    gap: 12,
+    marginBottom: 20,
     width: '100%',
     maxWidth: 280,
   },
@@ -265,18 +408,32 @@ const styles = StyleSheet.create({
   quickUnlockBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    backgroundColor: COLORS.greenBg,
+    justifyContent: 'center',
+    gap: 8,
+    width: '100%',
+    maxWidth: 280,
+    paddingVertical: 14,
+    borderRadius: 16,
+    backgroundColor: COLORS.green,
+    ...SHADOWS.medium,
   },
   quickUnlockPressed: {
-    opacity: 0.7,
+    opacity: 0.85,
+    transform: [{ scale: 0.98 }],
   },
   quickUnlockText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: COLORS.green,
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 0.8,
+  },
+  footerInfo: {
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  footerText: {
+    fontSize: 11,
+    color: COLORS.textMuted,
+    fontWeight: '500',
   },
 });

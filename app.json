@@ -1,15 +1,17 @@
 {
   "expo": {
-    "name": "Business Balance",
-    "slug": "business-balance",
+    "name": "IVAN A.K.A Electronics",
+    "slug": "ivan-aka-electronics",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.ivan.electronics"
     },
     "android": {
+      "package": "com.ivan.electronics",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
