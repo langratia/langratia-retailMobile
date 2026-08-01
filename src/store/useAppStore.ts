@@ -42,6 +42,7 @@ const initialSettings: BusinessSettings = {
   currency: 'UGX',
   lowStockThreshold: 5,
   isLoggedIn: false,
+  securityPin: '1234',
 };
 
 export const useAppStore = create<AppState>()(
@@ -166,6 +167,7 @@ export const useAppStore = create<AppState>()(
             currency: 'UGX',
             lowStockThreshold: 5,
             isLoggedIn: false,
+            securityPin: '1234',
           },
         });
       },

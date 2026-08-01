@@ -33,6 +33,7 @@ export interface BusinessSettings {
   currency: string;
   lowStockThreshold: number;
   isLoggedIn: boolean;
+  securityPin?: string;
 }
 
 export type RootTabParamList = {

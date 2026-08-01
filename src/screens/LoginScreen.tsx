@@ -19,36 +19,67 @@ export const LoginScreen = () => {
   const topPadding = Platform.OS === 'ios' ? insets.top + 16 : 24;
 
   const [pin, setPin] = useState<string>('');
+  const [errorMessage, setErrorMessage] = useState<string>('');
+
+  const correctPin = settings.securityPin || '1234';
 
   const handleKeyPress = useCallback(
     (digit: string) => {
+      setErrorMessage('');
       if (pin.length < 4) {
         const nextPin = pin + digit;
         setPin(nextPin);
         if (nextPin.length === 4) {
-          // Auto unlock after 4 digits
-          setTimeout(() => {
-            login();
-          }, 150);
+          if (nextPin === correctPin) {
+            setTimeout(() => {
+              setPin('');
+              login();
+            }, 150);
+          } else {
+            setTimeout(() => {
+              setErrorMessage('Incorrect Security PIN! Please try again.');
+              Alert.alert(
+                'Access Denied 🔒',
+                'Incorrect 4-digit Security PIN. Default PIN is 1234.'
+              );
+              setPin('');
+            }, 150);
+          }
         }
       }
     },
-    [pin, login]
+    [pin, correctPin, login]
   );
 
   const handleDelete = useCallback(() => {
+    setErrorMessage('');
     if (pin.length > 0) {
       setPin(pin.slice(0, -1));
     }
   }, [pin]);
 
+  const handleManualLogin = useCallback(() => {
+    if (pin === correctPin) {
+      setPin('');
+      login();
+    } else {
+      setErrorMessage('Incorrect Security PIN! Default PIN is 1234.');
+      Alert.alert(
+        'Access Denied 🔒',
+        'Please enter the correct 4-digit Security PIN (Default: 1234).'
+      );
+      setPin('');
+    }
+  }, [pin, correctPin, login]);
+
   const handleBiometricAuth = useCallback(() => {
     Alert.alert(
-      'Biometric Unlock',
-      `Unlocking ${settings.businessName || 'IVAN A.K.A Electronics'} via Fingerprint / Face ID...`,
+      'Biometric Fingerprint / Face ID',
+      `Authenticate to open ${settings.businessName || 'IVAN A.K.A Electronics'} POS?`,
       [
+        { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Unlock App',
+          text: 'Confirm Unlock',
           onPress: () => login(),
         },
       ]
@@ -118,6 +149,14 @@ export const LoginScreen = () => {
           </Text>
         </View>
 
+        {/* Error Message Feedback */}
+        {errorMessage !== '' && (
+          <View style={styles.errorBanner}>
+            <Ionicons name="alert-circle" size={16} color={COLORS.red} />
+            <Text style={styles.errorBannerText}>{errorMessage}</Text>
+          </View>
+        )}
+
         {/* PIN Indicator Dots */}
         <View style={styles.pinIndicatorRow}>
           {[0, 1, 2, 3].map((idx) => {
@@ -128,6 +167,7 @@ export const LoginScreen = () => {
                 style={[
                   styles.pinDot,
                   isFilled && styles.pinDotFilled,
+                  errorMessage !== '' && styles.pinDotError,
                 ]}
               />
             );
@@ -197,17 +237,17 @@ export const LoginScreen = () => {
           </View>
         </View>
 
-        {/* Direct Unlock Button */}
+        {/* Validate Security PIN Button */}
         <Pressable
           style={({ pressed }) => [
             styles.quickUnlockBtn,
             pressed && styles.quickUnlockPressed,
           ]}
-          onPress={login}
+          onPress={handleManualLogin}
           accessibilityRole="button"
-          accessibilityLabel="Open Application Now"
+          accessibilityLabel="Validate 4-digit PIN and open application"
         >
-          <Ionicons name="power-outline" size={20} color="#FFFFFF" />
+          <Ionicons name="lock-open-outline" size={20} color="#FFFFFF" />
           <Text style={styles.quickUnlockText}>ENTER APPLICATION</Text>
         </Pressable>
 
@@ -379,6 +419,21 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: 20,
   },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.redBg,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+    marginBottom: 12,
+    gap: 6,
+  },
+  errorBannerText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.red,
+  },
   pinIndicatorRow: {
     flexDirection: 'row',
     gap: 16,
@@ -397,6 +452,10 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.green,
     borderColor: COLORS.green,
     transform: [{ scale: 1.1 }],
+  },
+  pinDotError: {
+    backgroundColor: COLORS.red,
+    borderColor: COLORS.red,
   },
   keypadGrid: {
     gap: 12,

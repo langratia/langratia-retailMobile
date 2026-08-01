@@ -27,6 +27,7 @@ export const SettingsScreen = ({ navigation }: any) => {
   const [lowStockThreshold, setLowStockThreshold] = useState(
     settings.lowStockThreshold.toString()
   );
+  const [securityPin, setSecurityPin] = useState(settings.securityPin || '1234');
 
   const handleSave = useCallback(() => {
     const thresholdNum = parseInt(lowStockThreshold, 10);
@@ -35,14 +36,20 @@ export const SettingsScreen = ({ navigation }: any) => {
       return;
     }
 
+    if (!/^\d{4}$/.test(securityPin)) {
+      Alert.alert('PIN Error', 'Security PIN must be exactly 4 numeric digits.');
+      return;
+    }
+
     updateSettings({
       businessName,
       ownerName,
       currency,
       lowStockThreshold: thresholdNum,
+      securityPin,
     });
-    Alert.alert('Settings Saved! 🎉', 'Your business configuration has been updated successfully.');
-  }, [businessName, ownerName, currency, lowStockThreshold, updateSettings]);
+    Alert.alert('Settings Saved! 🎉', 'Your business configuration and 4-digit security PIN have been updated successfully.');
+  }, [businessName, ownerName, currency, lowStockThreshold, securityPin, updateSettings]);
 
   const handleResetData = useCallback(() => {
     Alert.alert(
@@ -173,6 +180,25 @@ export const SettingsScreen = ({ navigation }: any) => {
               placeholder="e.g. 5"
               placeholderTextColor={COLORS.textMuted}
               accessibilityLabel="Low stock threshold input"
+            />
+          </View>
+
+          {/* 4-Digit Security PIN */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>App Unlock Security PIN (4 Digits)</Text>
+            <Text style={styles.helperText}>
+              The 4-digit PIN required to unlock and log into your application (Default: 1234).
+            </Text>
+            <TextInput
+              style={styles.input}
+              value={securityPin}
+              onChangeText={setSecurityPin}
+              keyboardType="number-pad"
+              maxLength={4}
+              secureTextEntry={false}
+              placeholder="1234"
+              placeholderTextColor={COLORS.textMuted}
+              accessibilityLabel="Security PIN input"
             />
           </View>
 
