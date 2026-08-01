@@ -56,21 +56,21 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
       accessibilityHint={onPress ? 'Taps to view full transaction details' : undefined}
     >
       <View style={[styles.iconCircle, { backgroundColor: iconBg }]}>
-        <Ionicons name={iconName} size={20} color={iconColor} />
+        <Ionicons name={iconName} size={18} color={iconColor} />
       </View>
 
       <View style={styles.detailsCol}>
-        <Text style={styles.description} numberOfLines={1}>
+        <Text style={styles.description} numberOfLines={1} ellipsizeMode="tail">
           {transaction.description}
         </Text>
         <View style={styles.subRow}>
-          <Text style={styles.dateTime}>
+          <Text style={styles.dateTime} numberOfLines={1}>
             {transaction.date}, {transaction.time}
           </Text>
           <View style={[styles.typeBadge, { backgroundColor: iconBg }]}>
             <View style={[styles.bullet, { backgroundColor: iconColor }]} />
             <Text style={[styles.typeText, { color: iconColor }]}>
-              {isCredit ? 'Credit (Debt)' : isIncome ? 'Income' : 'Expense'}
+              {isCredit ? 'Credit' : isIncome ? 'Income' : 'Expense'}
             </Text>
           </View>
         </View>
@@ -81,13 +81,16 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
           style={[styles.amountText, { color: amountColor }]}
           numberOfLines={1}
           adjustsFontSizeToFit={true}
+          minimumFontScale={0.75}
         >
           {formattedAmount}
         </Text>
-        <Text style={styles.categoryText}>{transaction.category}</Text>
+        <Text style={styles.categoryText} numberOfLines={1}>
+          {transaction.category}
+        </Text>
       </View>
 
-      <Ionicons name="chevron-forward" size={16} color={COLORS.textMuted} style={styles.chevron} />
+      <Ionicons name="chevron-forward" size={14} color={COLORS.textMuted} style={styles.chevron} />
     </Pressable>
   );
 };
@@ -96,7 +99,7 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 10,
     minHeight: 52,
     borderBottomWidth: 1,
     borderColor: COLORS.divider,
@@ -106,30 +109,32 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   iconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: 10,
+    flexShrink: 0,
   },
   detailsCol: {
     flex: 1,
     marginRight: 8,
   },
   description: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
     color: COLORS.textPrimary,
-    marginBottom: 4,
+    marginBottom: 3,
   },
   subRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    flexWrap: 'wrap',
+    gap: 6,
   },
   dateTime: {
-    fontSize: 12,
+    fontSize: 11,
     color: COLORS.textSecondary,
   },
   typeBadge: {
@@ -137,32 +142,38 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 8,
-    gap: 4,
+    borderRadius: 6,
+    gap: 3,
   },
   bullet: {
-    width: 5,
-    height: 5,
-    borderRadius: 3,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
   },
   typeText: {
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   amountCol: {
     alignItems: 'flex-end',
-    marginRight: 6,
+    justifyContent: 'center',
+    marginRight: 4,
+    minWidth: 84,
+    flexShrink: 0,
   },
   amountText: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '800',
     marginBottom: 2,
+    textAlign: 'right',
   },
   categoryText: {
-    fontSize: 12,
+    fontSize: 11,
     color: COLORS.textSecondary,
+    textAlign: 'right',
   },
   chevron: {
     marginLeft: 2,
+    flexShrink: 0,
   },
 });

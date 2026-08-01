@@ -237,15 +237,25 @@ export const StatementModal = ({ navigation }: any) => {
           </View>
 
           {/* Amount */}
-          <View style={{ flex: 1.8, alignItems: 'flex-end' }}>
-            <Text style={[styles.tdAmount, { color: typeColor }]}>
+          <View style={{ flex: 1.8, alignItems: 'flex-end', justifyContent: 'center' }}>
+            <Text
+              style={[styles.tdAmount, { color: typeColor }]}
+              numberOfLines={1}
+              adjustsFontSizeToFit={true}
+              minimumFontScale={0.75}
+            >
               {isIncome ? '+' : '-'}{row.amount.toLocaleString()}
             </Text>
           </View>
 
           {/* Running Balance */}
-          <View style={{ flex: 2, alignItems: 'flex-end' }}>
-            <Text style={styles.tdBalance}>
+          <View style={{ flex: 2, alignItems: 'flex-end', justifyContent: 'center' }}>
+            <Text
+              style={styles.tdBalance}
+              numberOfLines={1}
+              adjustsFontSizeToFit={true}
+              minimumFontScale={0.75}
+            >
               {settings.currency} {row.runningBalance.toLocaleString()}
             </Text>
           </View>

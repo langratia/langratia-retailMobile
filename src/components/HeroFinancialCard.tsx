@@ -68,7 +68,12 @@ export const HeroFinancialCard: React.FC<HeroFinancialCardProps> = ({
             <Ionicons name="cash-outline" size={13} color="#CBD5E1" />
             <Text style={styles.heroMetricLabel}>Cash</Text>
           </View>
-          <Text style={[styles.heroMetricVal, { color: COLORS.green }]} numberOfLines={1}>
+          <Text
+            style={[styles.heroMetricVal, { color: COLORS.green }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit={true}
+            minimumFontScale={0.75}
+          >
             {formattedCash}
           </Text>
         </View>
@@ -80,7 +85,12 @@ export const HeroFinancialCard: React.FC<HeroFinancialCardProps> = ({
             <Ionicons name="cube-outline" size={13} color="#CBD5E1" />
             <Text style={styles.heroMetricLabel}>Stock</Text>
           </View>
-          <Text style={[styles.heroMetricVal, { color: COLORS.blue }]} numberOfLines={1}>
+          <Text
+            style={[styles.heroMetricVal, { color: COLORS.blue }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit={true}
+            minimumFontScale={0.75}
+          >
             {formattedStock}
           </Text>
         </View>
@@ -92,7 +102,12 @@ export const HeroFinancialCard: React.FC<HeroFinancialCardProps> = ({
             <Ionicons name="cart-outline" size={13} color="#CBD5E1" />
             <Text style={styles.heroMetricLabel}>Today</Text>
           </View>
-          <Text style={[styles.heroMetricVal, { color: COLORS.amber }]} numberOfLines={1}>
+          <Text
+            style={[styles.heroMetricVal, { color: COLORS.amber }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit={true}
+            minimumFontScale={0.75}
+          >
             {formattedToday}
           </Text>
         </View>

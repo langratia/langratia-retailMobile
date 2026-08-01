@@ -97,16 +97,18 @@ export const RecentActivityWidget: React.FC<RecentActivityWidgetProps> = ({
                 <Text
                   numberOfLines={1}
                   adjustsFontSizeToFit={true}
+                  minimumFontScale={0.75}
                   style={{
                     fontSize: 14,
-                    fontWeight: '700',
+                    fontWeight: '800',
                     color: tx.isCredit
                       ? COLORS.amber
                       : isIncome
                       ? COLORS.green
                       : COLORS.red,
-                    maxWidth: 110,
+                    maxWidth: 120,
                     textAlign: 'right',
+                    flexShrink: 0,
                   }}
                 >
                   {isIncome ? '+' : '-'}{currency} {tx.amount.toLocaleString()}
