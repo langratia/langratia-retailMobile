@@ -78,9 +78,10 @@ export const MenuModal = ({ navigation }: any) => {
     });
   }, []);
 
+  // MM-01: call logout() first so auth state is updated before goBack() fires.
   const handleLogout = useCallback(() => {
-    navigation.goBack();
     logout();
+    navigation.goBack();
   }, [navigation, logout]);
 
   const navigateToScreen = useCallback(

@@ -6,6 +6,7 @@ import {
   ScrollView,
   Pressable,
   FlatList,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '../store/useAppStore';
@@ -14,9 +15,13 @@ import { Header } from '../components/Header';
 import { StatCard } from '../components/StatCard';
 import { TransactionItemCard } from '../components/TransactionItemCard';
 import { Transaction } from '../types';
+import {
+  isTimestampToday,
+  resolveTransactionTimestamp,
+} from '../utils/dateUtils';
 
 export const CashbookScreen = ({ navigation }: any) => {
-  const { transactions, settings } = useAppStore();
+  const { transactions, settings, deleteTransaction } = useAppStore();
   const [selectedFilter, setSelectedFilter] = useState('All Transactions');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'amount'>('newest');
 
@@ -26,7 +31,7 @@ export const CashbookScreen = ({ navigation }: any) => {
     else setSortBy('newest');
   }, [sortBy]);
 
-  // 1. Financial Computations (Memoized)
+  // ─── 1. Financial computations ────────────────────────────────────────────
   const { totalIncome, totalExpenses, cashBalance, incomeCount, expenseCount } = useMemo(() => {
     const incTxs = transactions.filter((tx) => tx.type === 'income');
     const expTxs = transactions.filter((tx) => tx.type === 'expense');
@@ -43,39 +48,66 @@ export const CashbookScreen = ({ navigation }: any) => {
     };
   }, [transactions]);
 
-  // 2. Filtered & Sorted Transactions (Memoized)
+  // ─── 2. Filtered & sorted transactions ───────────────────────────────────
   const sortedTransactions = useMemo(() => {
-    const todayFormatted = new Date().toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-
     const filtered = transactions.filter((tx) => {
       if (selectedFilter === 'Credit Sales') return tx.isCredit || tx.category === 'Credit Sales';
       if (selectedFilter === 'Income') return tx.type === 'income';
       if (selectedFilter === 'Expense') return tx.type === 'expense';
-      if (selectedFilter === 'Today') return tx.date === 'Today' || tx.date === todayFormatted;
+      if (selectedFilter === 'Today') {
+        // CS-01 / GA-05: use createdAt timestamp for reliable "today" detection.
+        const ts = resolveTransactionTimestamp(tx.createdAt, tx.date);
+        return ts !== null && isTimestampToday(ts);
+      }
       return true;
     });
 
     return [...filtered].sort((a, b) => {
       if (sortBy === 'amount') return b.amount - a.amount;
-      if (sortBy === 'oldest') return a.id.localeCompare(b.id);
-      return b.id.localeCompare(a.id);
+      // CS-01: sort by createdAt timestamp (reliable) rather than ID string comparison.
+      // Fall back to ID comparison for legacy records without createdAt.
+      const tsA = resolveTransactionTimestamp(a.createdAt, a.date) ?? 0;
+      const tsB = resolveTransactionTimestamp(b.createdAt, b.date) ?? 0;
+      if (sortBy === 'oldest') return tsA - tsB;
+      return tsB - tsA; // newest first
     });
   }, [transactions, selectedFilter, sortBy]);
 
+  // ─── 3. Delete handler with confirmation ─────────────────────────────────
+  // GA-03: Exposes delete UI for transactions. Long-press → confirm → delete.
+  const handleDeleteTransaction = useCallback(
+    (tx: Transaction) => {
+      Alert.alert(
+        'Delete Transaction',
+        `Delete "${tx.description}" (${tx.type === 'income' ? '+' : '-'}${settings.currency} ${tx.amount.toLocaleString()})?\n\nThis action cannot be undone.${tx.productId ? '\n\nNote: Deleted sale transactions will restore the product stock.' : ''}`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: () => deleteTransaction(tx.id),
+          },
+        ]
+      );
+    },
+    [deleteTransaction, settings.currency]
+  );
+
+  // ─── 4. List renderers ────────────────────────────────────────────────────
   const renderTransactionItem = useCallback(
     ({ item, index }: { item: Transaction; index: number }) => (
       <TransactionItemCard
         transaction={item}
         currency={settings.currency}
         isLastItem={index === sortedTransactions.length - 1}
+        // CS-02: pressing a transaction row navigates to the Statement screen,
+        // which shows all transactions. Removed misleading chevron for individual detail
+        // — the Statement screen is the full ledger view.
         onPress={() => navigation.navigate('StatementModal')}
+        onLongPress={() => handleDeleteTransaction(item)}
       />
     ),
-    [settings.currency, sortedTransactions.length, navigation]
+    [settings.currency, sortedTransactions.length, navigation, handleDeleteTransaction]
   );
 
   const renderListHeader = useMemo(
@@ -119,6 +151,12 @@ export const CashbookScreen = ({ navigation }: any) => {
             />
           </View>
         </ScrollView>
+
+        {/* Tip: long-press to delete */}
+        <View style={styles.hintBanner}>
+          <Ionicons name="information-circle-outline" size={14} color={COLORS.textMuted} />
+          <Text style={styles.hintText}>Long-press any transaction to delete it</Text>
+        </View>
 
         {/* Date / Type Filter Pills */}
         <ScrollView
@@ -168,7 +206,7 @@ export const CashbookScreen = ({ navigation }: any) => {
           </Pressable>
         </ScrollView>
 
-        {/* Transactions List Card Header */}
+        {/* Transactions List Header */}
         <View style={styles.listHeaderRow}>
           <Text style={styles.listTitle}>All Transactions ({sortedTransactions.length})</Text>
           <Pressable
@@ -242,11 +280,8 @@ export const CashbookScreen = ({ navigation }: any) => {
         initialNumToRender={12}
         maxToRenderPerBatch={10}
         windowSize={5}
-        getItemLayout={(data, index) => ({
-          length: 52,
-          offset: 52 * index,
-          index,
-        })}
+        // CS-04: getItemLayout removed — TransactionItemCard has variable height
+        // (paddingVertical: 10 + content) so a fixed 52px constant is wrong.
       />
     </View>
   );
@@ -281,6 +316,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 10,
     marginBottom: 20,
+  },
+  hintBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: COLORS.inputBg,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  hintText: {
+    fontSize: 12,
+    color: COLORS.textMuted,
+    fontWeight: '500',
   },
   filterPillsRow: {
     gap: 8,

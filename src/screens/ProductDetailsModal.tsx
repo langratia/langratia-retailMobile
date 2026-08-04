@@ -206,18 +206,35 @@ export const ProductDetailsModal = ({ route, navigation }: any) => {
             <Text style={[styles.actionText, { color: COLORS.green }]}>+ 1 Unit</Text>
           </Pressable>
 
+          {/* Remove 1 Unit — PD-01: guard against negative stock */}
           <Pressable
             style={({ pressed }) => [
               styles.actionBtn,
-              { backgroundColor: COLORS.redBg, borderColor: COLORS.red },
+              {
+                backgroundColor: product.quantity > 0 ? COLORS.redBg : COLORS.inputBg,
+                borderColor: product.quantity > 0 ? COLORS.red : COLORS.divider,
+              },
               pressed && styles.pressed,
             ]}
-            onPress={() => adjustStock(product.id, -1)}
+            onPress={() => {
+              if (product.quantity <= 0) {
+                Alert.alert('Out of Stock', 'This product is already at 0 units.');
+                return;
+              }
+              adjustStock(product.id, -1);
+            }}
             accessibilityRole="button"
             accessibilityLabel={`Remove 1 unit from stock for ${product.name}`}
+            accessibilityState={{ disabled: product.quantity <= 0 }}
           >
-            <Ionicons name="remove-circle-outline" size={20} color={COLORS.red} />
-            <Text style={[styles.actionText, { color: COLORS.red }]}>- 1 Unit</Text>
+            <Ionicons
+              name="remove-circle-outline"
+              size={20}
+              color={product.quantity > 0 ? COLORS.red : COLORS.textMuted}
+            />
+            <Text style={[styles.actionText, { color: product.quantity > 0 ? COLORS.red : COLORS.textMuted }]}>
+              - 1 Unit
+            </Text>
           </Pressable>
         </View>
 

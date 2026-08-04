@@ -83,13 +83,17 @@ function BottomTabNavigator() {
 }
 
 export function AppNavigator() {
-  const { settings, logout } = useAppStore();
+  // isLoggedIn is now a top-level store property (not part of settings)
+  const { isLoggedIn, logout } = useAppStore();
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
-      // Auto-lock the app if it goes to the background or inactive state for security
-      if (nextAppState === 'background' || nextAppState === 'inactive') {
-        if (settings.isLoggedIn) {
+      // Lock only when the app moves to the BACKGROUND — not on `inactive`.
+      // On iOS, `inactive` fires during phone calls, Siri, notification shade
+      // interactions, and app-switcher gestures. Logging out on `inactive`
+      // would cause constant unwanted logouts during normal device usage.
+      if (nextAppState === 'background') {
+        if (isLoggedIn) {
           logout();
         }
       }
@@ -98,11 +102,11 @@ export function AppNavigator() {
     return () => {
       subscription.remove();
     };
-  }, [settings.isLoggedIn, logout]);
+  }, [isLoggedIn, logout]);
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {!settings.isLoggedIn ? (
+      {!isLoggedIn ? (
         <Stack.Screen name="Login" component={LoginScreen} />
       ) : (
         <>

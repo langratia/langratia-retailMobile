@@ -31,7 +31,22 @@ export const AddTransactionModal = ({ route, navigation }: any) => {
   const [description, setDescription] = useState('');
   const [amountError, setAmountError] = useState('');
   const [descError, setDescError] = useState('');
-  const [category, setCategory] = useState(type === 'income' ? 'Sales' : 'Rent');
+  // AT-01: Maintain separate category state per transaction type so toggling
+  // type does not wipe the user's previously selected category.
+  const [selectedIncomeCategory, setSelectedIncomeCategory] = useState(
+    defaultType === 'income' ? 'Sales' : 'Sales'
+  );
+  const [selectedExpenseCategory, setSelectedExpenseCategory] = useState(
+    defaultType === 'expense' ? 'Rent' : 'Rent'
+  );
+
+  // Computed category = the one for the currently active type
+  const category = type === 'income' ? selectedIncomeCategory : selectedExpenseCategory;
+  const setCategory = (cat: string) => {
+    if (type === 'income') setSelectedIncomeCategory(cat);
+    else setSelectedExpenseCategory(cat);
+  };
+
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successInfo, setSuccessInfo] = useState<{ title: string; subtitle: string; amount: string; isExpense: boolean }>({
     title: '',
@@ -102,18 +117,13 @@ export const AddTransactionModal = ({ route, navigation }: any) => {
           <Ionicons name="close-outline" size={26} color={COLORS.textPrimary} />
         </Pressable>
         <Text style={styles.headerTitle}>Add Transaction</Text>
-        <Pressable
-          onPress={handleSave}
-          style={({ pressed }) => [styles.saveHeaderBtn, pressed && styles.pressed]}
-          accessibilityRole="button"
-          accessibilityLabel="Save transaction header button"
-        >
-          <Text style={styles.saveHeaderText}>Save</Text>
-        </Pressable>
+        {/* AT-02: Removed duplicate header Save button — the full-width body button is the sole submit action */}
+        <View style={{ width: 26 }} />
       </View>
 
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined} 
+      {/* PS-03: behavior='height' for Android prevents keyboard obscuring amount input */}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
       >
         <ScrollView
@@ -131,7 +141,7 @@ export const AddTransactionModal = ({ route, navigation }: any) => {
             ]}
             onPress={() => {
               setType('income');
-              setCategory('Sales');
+              // AT-01: switching to income restores the previously selected income category
             }}
             accessibilityRole="button"
             accessibilityLabel="Income Inflow transaction type"
@@ -159,7 +169,7 @@ export const AddTransactionModal = ({ route, navigation }: any) => {
             ]}
             onPress={() => {
               setType('expense');
-              setCategory('Rent');
+              // AT-01: switching to expense restores the previously selected expense category
             }}
             accessibilityRole="button"
             accessibilityLabel="Expense Outflow transaction type"

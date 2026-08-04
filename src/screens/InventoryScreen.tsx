@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -24,11 +24,8 @@ export const InventoryScreen = ({ route, navigation }: any) => {
   );
   const [sortBy, setSortBy] = useState<'name' | 'quantity' | 'price'>('name');
 
-  useEffect(() => {
-    if (route?.params?.filterLowStock) {
-      setCategoryFilter('Low Stock');
-    }
-  }, [route?.params?.filterLowStock]);
+  // IS-01: The useState initializer already reads route.params on mount.
+  // A useEffect repeating the same write is redundant and causes an extra render.
 
   const toggleSort = useCallback(() => {
     if (sortBy === 'name') setSortBy('quantity');
@@ -72,9 +69,19 @@ export const InventoryScreen = ({ route, navigation }: any) => {
     });
   }, [products, searchQuery, categoryFilter, sortBy, settings.lowStockThreshold]);
 
-  const lowStockCount = useMemo(() => {
-    return products.filter((p) => p.quantity <= settings.lowStockThreshold).length;
-  }, [products, settings.lowStockThreshold]);
+  const lowStockCount = useMemo(
+    () => products.filter((p) => p.quantity <= settings.lowStockThreshold).length,
+    [products, settings.lowStockThreshold]
+  );
+
+  // IS-02: Derive unique category names from live product data so filter chips
+  // always match exactly what products exist in the catalog.
+  const categoryFilterOptions = useMemo(() => {
+    const uniqueCategories = Array.from(new Set(products.map((p) => p.category)))
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b));
+    return ['All', 'Low Stock', ...uniqueCategories];
+  }, [products]);
 
   const renderProductItem = useCallback(
     ({ item }: { item: Product }) => (
@@ -191,13 +198,13 @@ export const InventoryScreen = ({ route, navigation }: any) => {
           </View>
         </View>
 
-        {/* Category & Low Stock Filter Pills */}
+        {/* Category & Low Stock Filter Pills — IS-02: categories derived from live product data */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{ flexDirection: 'row', gap: 8, marginVertical: 8 }}
         >
-          {['All', 'Low Stock'].map((cat) => {
+          {categoryFilterOptions.map((cat) => {
             const isActive = categoryFilter === cat;
             const isLowStock = cat === 'Low Stock';
             return (
@@ -221,7 +228,7 @@ export const InventoryScreen = ({ route, navigation }: any) => {
                 ]}
                 onPress={() => setCategoryFilter(cat)}
                 accessibilityRole="button"
-                accessibilityLabel={`Filter by ${cat} ${isLowStock ? `(${lowStockCount} items)` : ''}`}
+                accessibilityLabel={`Filter by ${cat}${isLowStock ? ` (${lowStockCount} items)` : ''}`}
               >
                 {isLowStock && (
                   <Ionicons
@@ -241,7 +248,7 @@ export const InventoryScreen = ({ route, navigation }: any) => {
                       : COLORS.textSecondary,
                   }}
                 >
-                  {cat} {isLowStock ? `(${lowStockCount})` : ''}
+                  {cat}{isLowStock ? ` (${lowStockCount})` : ''}
                 </Text>
               </Pressable>
             );
@@ -277,10 +284,13 @@ export const InventoryScreen = ({ route, navigation }: any) => {
       categoryFilter,
       lowStockCount,
       sortedProducts.length,
+      categoryFilterOptions,
       toggleSort,
     ]
   );
 
+  // IS-03: include products.length in deps so the message switches correctly
+  // when the last product is added/removed while the list is open.
   const renderEmptyComponent = useMemo(
     () => (
       <View style={styles.emptyContainer}>
@@ -295,7 +305,8 @@ export const InventoryScreen = ({ route, navigation }: any) => {
         </Text>
       </View>
     ),
-    []
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [products.length]
   );
 
   return (

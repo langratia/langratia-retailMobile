@@ -16,11 +16,13 @@ import { COLORS, SHADOWS } from '../theme/theme';
 import { SuccessModal } from '../components/SuccessModal';
 import { generateFinancialStatementPDF } from '../utils/pdfGenerator';
 
-export const StatementModal = ({ navigation }: any) => {
+export const StatementModal = ({ route, navigation }: any) => {
   const { transactions, settings } = useAppStore();
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === 'ios' ? insets.top : 8;
-  const [filterType, setFilterType] = useState<'all' | 'income' | 'expense' | 'credit'>('all');
+  // SM-01: honour defaultFilter param passed from ReportsScreen links
+  const defaultFilter = route?.params?.defaultFilter ?? 'all';
+  const [filterType, setFilterType] = useState<'all' | 'income' | 'expense' | 'credit'>(defaultFilter);
   const [isExportingPDF, setIsExportingPDF] = useState(false);
   const [successConfig, setSuccessConfig] = useState<{
     visible: boolean;
@@ -58,10 +60,16 @@ export const StatementModal = ({ navigation }: any) => {
       return true;
     });
 
-    // Compute running balance from oldest to newest, then reverse for display
-    const reversed = [...filtered].reverse();
+    // SM-02: Sort oldest-first by createdAt timestamp (reliable) before computing
+    // running balances. Using array reversal was fragile — it depended on insertion order.
+    const sorted = [...filtered].sort((a, b) => {
+      const tsA = a.createdAt ?? 0;
+      const tsB = b.createdAt ?? 0;
+      return tsA - tsB; // ascending (oldest first)
+    });
+
     let currentRunning = 0;
-    const mapped = reversed.map((tx) => {
+    const mapped = sorted.map((tx) => {
       if (tx.type === 'income') {
         currentRunning += tx.amount;
       } else {
@@ -73,6 +81,7 @@ export const StatementModal = ({ navigation }: any) => {
       };
     });
 
+    // Return newest-first for display
     return mapped.reverse();
   }, [transactions, filterType]);
 

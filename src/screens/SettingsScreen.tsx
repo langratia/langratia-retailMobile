@@ -29,7 +29,7 @@ export const SettingsScreen = ({ navigation }: any) => {
   const [lowStockThreshold, setLowStockThreshold] = useState(
     settings.lowStockThreshold.toString()
   );
-  const [securityPin, setSecurityPin] = useState(settings.securityPin || '1234');
+  const [securityPin, setSecurityPin] = useState('1234');
   const [successConfig, setSuccessConfig] = useState<{
     visible: boolean;
     title: string;
@@ -55,6 +55,16 @@ export const SettingsScreen = ({ navigation }: any) => {
   }, []);
 
   const handleSave = useCallback(async () => {
+    // SS-03: Validate non-empty business name and owner name.
+    if (!businessName.trim()) {
+      Alert.alert('Validation Error', 'Business Name cannot be empty.');
+      return;
+    }
+    if (!ownerName.trim()) {
+      Alert.alert('Validation Error', 'Owner/Manager Name cannot be empty.');
+      return;
+    }
+
     const thresholdNum = parseInt(lowStockThreshold, 10);
     if (isNaN(thresholdNum) || thresholdNum < 0) {
       Alert.alert('Validation Error', 'Please enter a valid non-negative number for low stock threshold.');
@@ -70,14 +80,16 @@ export const SettingsScreen = ({ navigation }: any) => {
       await SecureStore.setItemAsync('SECURITY_PIN', securityPin);
     } catch (e) {
       console.error('Failed to securely save PIN', e);
+      Alert.alert('Save Error', 'Failed to save your security PIN. Please try again.');
+      return;
     }
 
+    // PIN is NOT stored in the Zustand settings — it lives exclusively in SecureStore.
     updateSettings({
-      businessName,
-      ownerName,
+      businessName: businessName.trim(),
+      ownerName: ownerName.trim(),
       currency,
       lowStockThreshold: thresholdNum,
-      securityPin,
     });
     setSuccessConfig({
       visible: true,
@@ -97,8 +109,12 @@ export const SettingsScreen = ({ navigation }: any) => {
           style: 'destructive',
           onPress: () => {
             resetAllData();
-            setBusinessName('My Business');
-            setOwnerName('Manager');
+            // SS-02: Sync local form state with the actual reset values from the store,
+            // not hardcoded strings that differ from initialSettings.
+            setBusinessName('IVAN A.K.A Electronics');
+            setOwnerName('Ivan');
+            setCurrency('UGX');
+            setLowStockThreshold('5');
             setSuccessConfig({
               visible: true,
               title: 'Data Wiped',
@@ -110,11 +126,13 @@ export const SettingsScreen = ({ navigation }: any) => {
     );
   }, [resetAllData]);
 
+  // SS-04: Call logout() first, then goBack(). The store update (sync) should
+  // happen before any navigation side-effect so the auth gate fires correctly.
   const handleLogout = useCallback(() => {
+    logout();
     if (navigation?.canGoBack()) {
       navigation.goBack();
     }
-    logout();
   }, [navigation, logout]);
 
   return (
@@ -232,8 +250,8 @@ export const SettingsScreen = ({ navigation }: any) => {
               onChangeText={setSecurityPin}
               keyboardType="number-pad"
               maxLength={4}
-              secureTextEntry={false}
-              placeholder="1234"
+              secureTextEntry={true}
+              placeholder="••••"
               placeholderTextColor={COLORS.textMuted}
               accessibilityLabel="Security PIN input"
             />
@@ -320,32 +338,7 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 40,
   },
-  healthCard: {
-    backgroundColor: COLORS.greenBg,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#A7F3D0',
-    ...SHADOWS.small,
-  },
-  healthHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 4,
-  },
-  healthTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: COLORS.green,
-    textTransform: 'uppercase',
-  },
-  healthSub: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    fontWeight: '500',
-  },
+  // Removed unused styles: healthCard, healthHeader, healthTitle, healthSub (GA-09)
   card: {
     backgroundColor: COLORS.card,
     borderRadius: 16,

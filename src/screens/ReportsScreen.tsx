@@ -4,6 +4,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '../store/useAppStore';
 import { COLORS, SHADOWS } from '../theme/theme';
 import { Header } from '../components/Header';
+import {
+  isTimestampToday,
+  isTimestampThisMonth,
+  resolveTransactionTimestamp,
+} from '../utils/dateUtils';
 
 export const ReportsScreen = ({ navigation }: any) => {
   const { products, transactions, settings } = useAppStore();
@@ -11,26 +16,18 @@ export const ReportsScreen = ({ navigation }: any) => {
 
   // Dynamic Financial Analytics Computation (Memoized)
   const analytics = useMemo(() => {
-    const todayFormatted = new Date().toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-
-    const now = new Date();
-    const currentMonthName = now.toLocaleDateString('en-US', { month: 'short' });
-
-    // Filter transactions by time horizon
+    // RS-02: Use reliable timestamp-based filtering via dateUtils instead of
+    // brittle date string contains/equality checks.
     const filteredTxs = transactions.filter((t) => {
-      if (timeRange === 'Today') {
-        return t.date === 'Today' || t.date === todayFormatted;
-      }
-      if (timeRange === 'This Month') {
-        return t.date.includes(currentMonthName) || t.date === 'Today' || t.date === 'Yesterday';
-      }
+      const ts = resolveTransactionTimestamp(t.createdAt, t.date);
+      if (ts === null) return timeRange === 'All Time'; // legacy record without timestamp → only visible in All Time
+      if (timeRange === 'Today') return isTimestampToday(ts);
+      if (timeRange === 'This Month') return isTimestampThisMonth(ts);
       return true; // All Time
     });
 
+    // Stock value is always all-time — it reflects current physical inventory,
+    // not a point-in-time financial position.
     const stockVal = products.reduce((acc, p) => acc + p.quantity * p.buyPrice, 0);
     const expectedRev = products.reduce((acc, p) => acc + p.quantity * p.sellPrice, 0);
     const expProfit = expectedRev - stockVal;
@@ -45,6 +42,8 @@ export const ReportsScreen = ({ navigation }: any) => {
 
     const netProf = income - expenses;
     const cashBal = income - expenses;
+    // RS-01: totalBusinessValue correctly combines period-filtered cash with
+    // all-time stock. The UI below makes this split explicit to avoid confusion.
     const totalAssets = cashBal + stockVal;
     const incomeCount = filteredTxs.filter((t) => t.type === 'income').length;
     const expenseCount = filteredTxs.filter((t) => t.type === 'expense').length;
@@ -111,11 +110,12 @@ export const ReportsScreen = ({ navigation }: any) => {
           })}
         </View>
 
-        {/* Business Value Highlight Card */}
+        {/* Business Value Highlight Card — RS-01: label clearly shows which part
+            is period-filtered (Cash) vs always all-time (Stock Value) */}
         <View style={styles.highlightCard}>
           <View style={styles.highlightHeader}>
             <Ionicons name="pie-chart-outline" size={24} color={COLORS.purple} />
-            <Text style={styles.highlightTitle}>Total Business Assets ({timeRange})</Text>
+            <Text style={styles.highlightTitle}>Total Business Assets</Text>
           </View>
           <Text
             style={styles.highlightValue}
@@ -125,7 +125,8 @@ export const ReportsScreen = ({ navigation }: any) => {
             {settings.currency} {analytics.totalBusinessValue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
           </Text>
           <Text style={styles.highlightSub}>
-            Cash Balance ({settings.currency} {analytics.cashBalance.toLocaleString()}) + Stock Value ({settings.currency} {analytics.totalStockValue.toLocaleString()})
+            Cash Balance ({timeRange}) {settings.currency} {analytics.cashBalance.toLocaleString()}{' '}
+            + Stock Value (All Time) {settings.currency} {analytics.totalStockValue.toLocaleString()}
           </Text>
         </View>
 
@@ -188,6 +189,7 @@ export const ReportsScreen = ({ navigation }: any) => {
             icon: 'cube-outline',
             color: COLORS.blue,
             route: 'Inventory',
+            params: undefined,
           },
           {
             title: 'Sales & Inflow Report',
@@ -195,6 +197,8 @@ export const ReportsScreen = ({ navigation }: any) => {
             icon: 'trending-up-outline',
             color: COLORS.green,
             route: 'StatementModal',
+            // RS-03: pre-filter StatementModal to income transactions
+            params: { defaultFilter: 'income' },
           },
           {
             title: 'Expenses & Outflow Report',
@@ -202,12 +206,14 @@ export const ReportsScreen = ({ navigation }: any) => {
             icon: 'receipt-outline',
             color: COLORS.amber,
             route: 'StatementModal',
+            // RS-03: pre-filter StatementModal to expense transactions
+            params: { defaultFilter: 'expense' },
           },
         ].map((item, idx) => (
           <Pressable
             key={idx}
             style={({ pressed }) => [styles.reportRow, pressed && styles.pressed]}
-            onPress={() => navigation.navigate(item.route)}
+            onPress={() => navigation.navigate(item.route, item.params)}
             accessibilityRole="button"
             accessibilityLabel={`${item.title}, ${item.desc}`}
             accessibilityHint={`Navigates to ${item.route}`}

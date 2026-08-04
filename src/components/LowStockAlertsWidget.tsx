@@ -8,6 +8,8 @@ import { Badge } from './Badge';
 interface LowStockAlertsWidgetProps {
   lowStockItems: Product[];
   lowStockThreshold: number;
+  /** Maximum items to display before showing a "View All" count. Default: 5 */
+  maxVisible?: number;
   onViewAll: () => void;
   onItemPress: (item: Product) => void;
 }
@@ -15,9 +17,13 @@ interface LowStockAlertsWidgetProps {
 export const LowStockAlertsWidget: React.FC<LowStockAlertsWidgetProps> = ({
   lowStockItems,
   lowStockThreshold,
+  maxVisible = 5,
   onViewAll,
   onItemPress,
 }) => {
+  // LS-01: Cap the list so the HomeScreen scroll isn't overwhelmed
+  const visibleItems = lowStockItems.slice(0, maxVisible);
+  const hiddenCount = Math.max(0, lowStockItems.length - maxVisible);
   return (
     <View style={styles.container}>
       <View style={styles.sectionHeader}>
@@ -47,42 +53,56 @@ export const LowStockAlertsWidget: React.FC<LowStockAlertsWidgetProps> = ({
             </Text>
           </View>
         ) : (
-          lowStockItems.map((item, index) => {
-            const isLast = index === lowStockItems.length - 1;
-            return (
+          <>
+            {visibleItems.map((item, index) => {
+              const isLast = index === visibleItems.length - 1 && hiddenCount === 0;
+              return (
+                <Pressable
+                  key={item.id}
+                  style={({ pressed }) => [
+                    styles.alertRow,
+                    isLast && { borderBottomWidth: 0 },
+                    pressed && styles.alertRowPressed,
+                  ]}
+                  onPress={() => onItemPress(item)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${item.name}, ${item.quantity} units remaining. Low stock.`}
+                  accessibilityHint="Opens product details"
+                >
+                  <View style={styles.alertIconBox}>
+                    <Ionicons name="cube" size={20} color={COLORS.amber} />
+                  </View>
+
+                  <View style={styles.alertInfo}>
+                    <Text style={styles.alertName}>{item.name}</Text>
+                    <Text style={styles.alertCategory}>
+                      {item.category} • {item.quantity} unit(s) remaining
+                    </Text>
+                  </View>
+
+                  <Badge quantity={item.quantity} lowStockThreshold={lowStockThreshold} />
+                  <Ionicons
+                    name="chevron-forward"
+                    size={16}
+                    color={COLORS.textMuted}
+                    style={{ marginLeft: 8 }}
+                  />
+                </Pressable>
+              );
+            })}
+            {hiddenCount > 0 && (
               <Pressable
-                key={item.id}
-                style={({ pressed }) => [
-                  styles.alertRow,
-                  isLast && { borderBottomWidth: 0 },
-                  pressed && styles.alertRowPressed,
-                ]}
-                onPress={() => onItemPress(item)}
+                style={({ pressed }) => [styles.alertRow, { borderBottomWidth: 0, justifyContent: 'center' }, pressed && styles.alertRowPressed]}
+                onPress={onViewAll}
                 accessibilityRole="button"
-                accessibilityLabel={`${item.name}, ${item.quantity} units remaining. Low stock.`}
-                accessibilityHint="Taps to filter inventory by this item"
+                accessibilityLabel={`View ${hiddenCount} more low stock items`}
               >
-                <View style={styles.alertIconBox}>
-                  <Ionicons name="cube" size={20} color={COLORS.amber} />
-                </View>
-
-                <View style={styles.alertInfo}>
-                  <Text style={styles.alertName}>{item.name}</Text>
-                  <Text style={styles.alertCategory}>
-                    {item.category} • {item.quantity} unit(s) remaining
-                  </Text>
-                </View>
-
-                <Badge quantity={item.quantity} lowStockThreshold={lowStockThreshold} />
-                <Ionicons
-                  name="chevron-forward"
-                  size={16}
-                  color={COLORS.textMuted}
-                  style={{ marginLeft: 8 }}
-                />
+                <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.green }}>
+                  +{hiddenCount} more item{hiddenCount !== 1 ? 's' : ''} — View All
+                </Text>
               </Pressable>
-            );
-          })
+            )}
+          </>
         )}
       </View>
     </View>

@@ -7,7 +7,6 @@ import {
   Pressable,
   Alert,
   TextInput,
-  ActivityIndicator,
   Platform,
   KeyboardAvoidingView,
 } from 'react-native';
@@ -64,8 +63,6 @@ export const RecordSaleModal = ({ navigation }: any) => {
   const [isCredit, setIsCredit] = useState<boolean>(false);
   const [customerName, setCustomerName] = useState<string>('');
   const [customerPhone, setCustomerPhone] = useState<string>('');
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-
   const [productError, setProductError] = useState('');
   const [qtyError, setQtyError] = useState('');
   const [priceError, setPriceError] = useState('');
@@ -76,11 +73,13 @@ export const RecordSaleModal = ({ navigation }: any) => {
     [products, selectedProductId]
   );
 
+  // RS-03: depend only on selectedProductId so the effect doesn't fire when the
+  // product object reference changes (e.g. after a stock adjustment).
   useEffect(() => {
     if (selectedProduct) {
       setCustomPrice(selectedProduct.sellPrice.toString());
     }
-  }, [selectedProductId, selectedProduct]);
+  }, [selectedProductId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { currentPriceNum, totalSaleAmount, estimatedProfit } = useMemo(() => {
     const pNum = parseFloat(customPrice) || 0;
@@ -127,33 +126,29 @@ export const RecordSaleModal = ({ navigation }: any) => {
 
     if (!isValid) return;
 
-    setIsSubmitting(true);
+    // RS-01: recordSale is a synchronous Zustand action — removed fake async delay.
+    const success = recordSale(
+      selectedProduct!.id,
+      qty,
+      currentPriceNum,
+      isCredit,
+      customerName,
+      customerPhone
+    );
 
-    setTimeout(() => {
-      const success = recordSale(
-        selectedProduct!.id,
-        qty,
-        currentPriceNum,
-        isCredit,
-        customerName,
-        customerPhone
-      );
-      setIsSubmitting(false);
-
-      if (success) {
-        setSuccessInfo({
-          title: isCredit ? 'Credit Sale Logged' : 'Sale Completed',
-          subtitle: isCredit
-            ? `Sold ${qty} unit(s) to ${customerName} on Credit.`
-            : `Sold ${qty} unit(s) of ${selectedProduct!.name}. Inventory & Cashbook updated!`,
-          amount: `+${settings.currency} ${totalSaleAmount.toLocaleString()}`,
-          badgeText: isCredit ? 'CREDIT DEBT LOGGED' : 'CASHBOOK CREDITED',
-          iconName: isCredit ? 'document-text' : 'checkmark-circle',
-          iconColor: isCredit ? COLORS.amber : COLORS.green,
-        });
-        setShowSuccessModal(true);
-      }
-    }, 300);
+    if (success) {
+      setSuccessInfo({
+        title: isCredit ? 'Credit Sale Logged' : 'Sale Completed',
+        subtitle: isCredit
+          ? `Sold ${qty} unit(s) to ${customerName} on Credit.`
+          : `Sold ${qty} unit(s) of ${selectedProduct!.name}. Inventory & Cashbook updated!`,
+        amount: `+${settings.currency} ${totalSaleAmount.toLocaleString()}`,
+        badgeText: isCredit ? 'CREDIT DEBT LOGGED' : 'CASHBOOK CREDITED',
+        iconName: isCredit ? 'document-text' : 'checkmark-circle',
+        iconColor: isCredit ? COLORS.amber : COLORS.green,
+      });
+      setShowSuccessModal(true);
+    }
   }, [
     selectedProduct,
     quantitySold,
@@ -179,8 +174,9 @@ export const RecordSaleModal = ({ navigation }: any) => {
         <View style={{ width: 26 }} />
       </View>
 
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined} 
+      {/* PS-03: 'height' on Android keeps the amount input visible above the keyboard */}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
       >
         <ScrollView
@@ -275,8 +271,13 @@ export const RecordSaleModal = ({ navigation }: any) => {
                   </View>
                 )}
 
-                <Pressable style={styles.confirmBtn} onPress={handleConfirmSale} disabled={isSubmitting}>
-                  {isSubmitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.confirmBtnText}>Complete Sale</Text>}
+                <Pressable
+                  style={({ pressed }) => [styles.confirmBtn, pressed && { opacity: 0.8 }]}
+                  onPress={handleConfirmSale}
+                  accessibilityRole="button"
+                  accessibilityLabel="Complete sale"
+                >
+                  <Text style={styles.confirmBtnText}>Complete Sale</Text>
                 </Pressable>
               </View>
             )}

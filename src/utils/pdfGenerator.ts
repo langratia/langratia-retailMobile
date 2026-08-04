@@ -21,6 +21,16 @@ export const generateFinancialStatementPDF = async ({
   netBalance,
   transactions,
 }: GeneratePDFParams): Promise<void> => {
+  // PG-01: Escape user-generated strings before interpolating into HTML to
+  // prevent XSS / broken layout from names containing <, >, &, quotes.
+  const esc = (str: string): string =>
+    str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+
   const currentDate = new Date().toLocaleDateString('en-US', {
     month: 'long',
     day: 'numeric',
@@ -39,17 +49,17 @@ export const generateFinancialStatementPDF = async ({
       return `
         <tr style="background-color: ${rowBg}; border-bottom: 1px solid #E5E7EB;">
           <td style="padding: 10px 12px; font-size: 12px; color: #111827;">
-            <div style="font-weight: 600;">${tx.description}</div>
-            <div style="font-size: 10px; color: #6B7280; margin-top: 2px;">${tx.date} • ${tx.time}</div>
+            <div style="font-weight: 600;">${esc(tx.description)}</div>
+            <div style="font-size: 10px; color: #6B7280; margin-top: 2px;">${esc(tx.date)} • ${esc(tx.time)}</div>
           </td>
           <td style="padding: 10px 12px; font-size: 11px; text-align: center;">
             <span style="background-color: ${typeColor}15; color: ${typeColor}; padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 10px;">
               ${typeLabel}
             </span>
           </td>
-          <td style="padding: 10px 12px; font-size: 12px; color: #6B7280;">${tx.category}</td>
+          <td style="padding: 10px 12px; font-size: 12px; color: #6B7280;">${esc(tx.category)}</td>
           <td style="padding: 10px 12px; font-size: 13px; font-weight: 700; color: ${typeColor}; text-align: right;">
-            ${amountSign}${currency} ${tx.amount.toLocaleString('en-US', { minimumFractionDigits: 0 })}
+            ${amountSign}${esc(currency)} ${tx.amount.toLocaleString('en-US', { minimumFractionDigits: 0 })}
           </td>
         </tr>
       `;
@@ -61,7 +71,7 @@ export const generateFinancialStatementPDF = async ({
     <html>
       <head>
         <meta charset="utf-8" />
-        <title>Financial Statement - ${businessName}</title>
+        <title>Financial Statement - ${esc(businessName)}</title>
         <style>
           body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -148,8 +158,8 @@ export const generateFinancialStatementPDF = async ({
       <body>
         <div class="header-banner">
           <div>
-            <h1 class="brand-title">${businessName}</h1>
-            <div class="brand-sub">Owner: ${ownerName || 'Management'} • Statement Date: ${currentDate}</div>
+            <h1 class="brand-title">${esc(businessName)}</h1>
+            <div class="brand-sub">Owner: ${esc(ownerName || 'Management')} • Statement Date: ${currentDate}</div>
           </div>
           <div class="report-tag">OFFICIAL POS LEDGER STATEMENT</div>
         </div>
@@ -157,11 +167,11 @@ export const generateFinancialStatementPDF = async ({
         <div class="metrics-grid">
           <div class="metric-card">
             <div class="metric-label">Total Inflow (Income)</div>
-            <div class="metric-value" style="color: #10B981;">+${currency} ${totalIncome.toLocaleString()}</div>
+            <div class="metric-value" style="color: #10B981;">+${esc(currency)} ${totalIncome.toLocaleString()}</div>
           </div>
           <div class="metric-card">
             <div class="metric-label">Total Outflow (Expenses)</div>
-            <div class="metric-value" style="color: #EF4444;">-${currency} ${totalExpenses.toLocaleString()}</div>
+            <div class="metric-value" style="color: #EF4444;">-${esc(currency)} ${totalExpenses.toLocaleString()}</div>
           </div>
           <div class="metric-card">
             <div class="metric-label">Net Balance</div>

@@ -8,6 +8,7 @@ interface TransactionItemCardProps {
   transaction: Transaction;
   currency?: string;
   onPress?: () => void;
+  onLongPress?: () => void;
   isLastItem?: boolean;
 }
 
@@ -15,6 +16,7 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = React.mem
   transaction,
   currency = 'UGX',
   onPress,
+  onLongPress,
   isLastItem = false,
 }) => {
   const isCredit = transaction.isCredit;
@@ -51,9 +53,11 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = React.mem
         pressed && styles.pressed,
       ]}
       onPress={onPress}
+      onLongPress={onLongPress}
+      delayLongPress={400}
       accessibilityRole="button"
       accessibilityLabel={`${transaction.description}, ${transaction.date} at ${transaction.time}, ${isCredit ? 'Credit debt' : isIncome ? 'Income' : 'Expense'} of ${formattedAmount}`}
-      accessibilityHint={onPress ? 'Taps to view full transaction details' : undefined}
+      accessibilityHint={onLongPress ? 'Double-tap to view details. Long-press to delete.' : 'Tap to view details'}
     >
       <View style={[styles.iconCircle, { backgroundColor: iconBg }]}>
         <Ionicons name={iconName} size={18} color={iconColor} />

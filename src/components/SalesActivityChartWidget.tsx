@@ -20,7 +20,14 @@ export const SalesActivityChartWidget: React.FC<SalesActivityChartWidgetProps> =
   data,
   maxWeeklySale,
 }) => {
-  const [selectedDayIdx, setSelectedDayIdx] = useState<number | null>(data.length - 1);
+  // CW-02: default selection = last day with actual sales; fall back to today's index
+  const defaultIdx = (() => {
+    for (let i = data.length - 1; i >= 0; i--) {
+      if (data[i].amount > 0) return i;
+    }
+    return data.length - 1;
+  })();
+  const [selectedDayIdx, setSelectedDayIdx] = useState<number | null>(defaultIdx);
 
   const selectedData = selectedDayIdx !== null ? data[selectedDayIdx] : null;
 
@@ -55,10 +62,11 @@ export const SalesActivityChartWidget: React.FC<SalesActivityChartWidgetProps> =
         <View style={styles.barsContainer}>
           {data.map((item, idx) => {
             const isSelected = selectedDayIdx === idx;
-            const barHeightPercent = Math.min(
-              100,
-              Math.max(12, (item.amount / (maxWeeklySale || 1)) * 100)
-            );
+            // CW-01: zero-amount bars render at 0 height (flat baseline), not 12%.
+            const barHeightPercent =
+              item.amount > 0
+                ? Math.min(100, Math.max(12, (item.amount / (maxWeeklySale || 1)) * 100))
+                : 0;
 
             return (
               <Pressable

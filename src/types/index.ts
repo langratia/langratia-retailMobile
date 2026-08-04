@@ -18,8 +18,20 @@ export interface Transaction {
   amount: number;
   description: string;
   category: string;
-  date: string; // ISO String or readable format
+  /** Human-readable date string — kept for backward compat with stored records. */
+  date: string;
   time: string;
+  /**
+   * Unix timestamp (ms) added in v1.2.
+   * All new transactions carry this field. Legacy records may omit it; use
+   * `resolveTransactionTimestamp()` from dateUtils when comparing dates.
+   */
+  createdAt?: number;
+  /**
+   * Number of product units sold — populated by `recordSale` so that
+   * `deleteTransaction` can accurately revert the correct stock quantity.
+   */
+  quantitySold?: number;
   productId?: string;
   isCredit?: boolean;
   customerName?: string;
@@ -27,13 +39,18 @@ export interface Transaction {
   paidAmount?: number;
 }
 
+/**
+ * Business configuration settings.
+ *
+ * NOTE: `isLoggedIn` and `securityPin` have been intentionally removed from
+ * this interface. Auth state is tracked as a separate top-level store property
+ * (never persisted), and the security PIN lives exclusively in SecureStore.
+ */
 export interface BusinessSettings {
   businessName: string;
   ownerName: string;
   currency: string;
   lowStockThreshold: number;
-  isLoggedIn: boolean;
-  securityPin?: string;
 }
 
 export type RootTabParamList = {
@@ -41,15 +58,18 @@ export type RootTabParamList = {
   Inventory: undefined;
   Cashbook: undefined;
   Printery: undefined;
-  Settings: undefined;
 };
 
 export type RootStackParamList = {
   MainTabs: undefined;
   Login: undefined;
-  Reports: undefined;
-  AddEditProduct: { product?: Product };
-  AddTransaction: { defaultType?: TransactionType };
-  RecordSale: { productId?: string };
+  Reports: { defaultFilter?: 'all' | 'income' | 'expense' | 'credit' };
+  /** Full tabular ledger — optionally pre-filtered on open */
+  StatementModal: { defaultFilter?: 'all' | 'income' | 'expense' | 'credit' } | undefined;
+  MenuModal: undefined;
+  Settings: undefined;
+  AddEditProduct: { product?: Product } | undefined;
+  AddTransaction: { defaultType?: TransactionType } | undefined;
+  RecordSale: { productId?: string } | undefined;
   ProductDetails: { productId: string };
 };

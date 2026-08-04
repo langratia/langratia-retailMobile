@@ -7,7 +7,6 @@ import {
   TextInput,
   Pressable,
   Alert,
-  ActivityIndicator,
   Platform,
   KeyboardAvoidingView,
 } from 'react-native';
@@ -39,7 +38,7 @@ export const AddEditProductModal = ({ route, navigation }: any) => {
   const [quantity, setQuantity] = useState(
     existingProduct ? existingProduct.quantity.toString() : ''
   );
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);  // kept for API compat if needed
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successInfo, setSuccessInfo] = useState<{ title: string; subtitle: string; amount: string }>({
     title: '',
@@ -78,7 +77,6 @@ export const AddEditProductModal = ({ route, navigation }: any) => {
       isValid = false;
     }
     const bPrice = parseFloat(buyPrice);
-    const sPrice = sellPrice.trim() ? parseFloat(sellPrice) : bPrice;
     const qty = parseInt(quantity, 10);
 
     if (isNaN(bPrice) || bPrice < 0) {
@@ -93,9 +91,29 @@ export const AddEditProductModal = ({ route, navigation }: any) => {
 
     if (!isValid) return;
 
-    setIsSubmitting(true);
+    // AE-01: Warn when no sell price is provided (would result in 0% margin).
+    const sPrice = sellPrice.trim() ? parseFloat(sellPrice) : null;
+    if (sPrice === null) {
+      Alert.alert(
+        'No Sell Price Set',
+        'You have not entered a Sell Price. The product will be priced at the Buying Price (0% profit margin). Continue?',
+        [
+          { text: 'Go Back', style: 'cancel' },
+          {
+            text: 'Continue',
+            onPress: () => commitSave(bPrice, bPrice, qty),
+          },
+        ]
+      );
+      return;
+    }
 
-    setTimeout(() => {
+    commitSave(bPrice, sPrice, qty);
+  }, [name, buyPrice, sellPrice, quantity, category, isEditing, existingProduct, updateProduct, addProduct, settings.currency]);
+
+  // AE-03: Removed fake async setTimeout — Zustand operations are synchronous.
+  const commitSave = useCallback(
+    (bPrice: number, sPrice: number, qty: number) => {
       if (isEditing) {
         updateProduct(existingProduct.id, {
           name,
@@ -113,7 +131,6 @@ export const AddEditProductModal = ({ route, navigation }: any) => {
           quantity: qty,
         });
       }
-      setIsSubmitting(false);
 
       setSuccessInfo({
         title: isEditing ? 'Product Updated' : 'Stock Item Added',
@@ -123,8 +140,9 @@ export const AddEditProductModal = ({ route, navigation }: any) => {
         amount: `${settings.currency} ${sPrice.toLocaleString()}`,
       });
       setShowSuccessModal(true);
-    }, 250);
-  }, [name, buyPrice, sellPrice, quantity, category, isEditing, existingProduct, updateProduct, addProduct, settings.currency]);
+    },
+    [name, category, isEditing, existingProduct, updateProduct, addProduct, settings.currency]
+  );
 
   return (
     <View style={[styles.container, { paddingTop: topPadding }]}>
@@ -142,8 +160,9 @@ export const AddEditProductModal = ({ route, navigation }: any) => {
         <View style={{ width: 26 }} />
       </View>
 
+      {/* PS-03: behavior='height' for Android prevents keyboard obscuring inputs */}
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
       >
         <ScrollView
@@ -232,18 +251,19 @@ export const AddEditProductModal = ({ route, navigation }: any) => {
           {qtyError ? <Text style={styles.errorText}>{qtyError}</Text> : null}
         </View>
 
-        {/* Profit Preview Card */}
-        {buyPrice !== '' && (
+        {/* AE-02: Profit preview only shown when buyPrice AND quantity are both valid numbers */}
+        {buyPrice !== '' && quantity !== '' && parseInt(quantity, 10) > 0 && (
           <View style={styles.previewCard}>
             <View style={styles.previewRow}>
               <Text style={styles.previewLabel}>Estimated Unit Profit:</Text>
               <Text
                 style={[
                   styles.previewVal,
-                  { color: isLoss ? COLORS.red : COLORS.green },
+                  { color: isLoss ? COLORS.red : unitProfit === 0 ? COLORS.amber : COLORS.green },
                 ]}
               >
                 {unitProfit >= 0 ? '+' : ''}{settings.currency} {unitProfit.toLocaleString()}
+                {unitProfit === 0 ? '  (0% margin)' : ''}
               </Text>
             </View>
             <View style={styles.previewRow}>
@@ -259,23 +279,16 @@ export const AddEditProductModal = ({ route, navigation }: any) => {
         <Pressable
           style={({ pressed }) => [
             styles.saveBtn,
-            (isSubmitting || pressed) && { opacity: 0.8 },
+            pressed && { opacity: 0.8 },
           ]}
           onPress={handleSave}
-          disabled={isSubmitting}
           accessibilityRole="button"
           accessibilityLabel={isEditing ? 'Update product' : 'Save product'}
         >
-          {isSubmitting ? (
-            <ActivityIndicator size="small" color={COLORS.card} />
-          ) : (
-            <>
-              <Ionicons name="checkmark-circle-outline" size={22} color={COLORS.card} />
-              <Text style={styles.saveBtnText}>
-                {isEditing ? 'Update Product' : 'Save Product'}
-              </Text>
-            </>
-          )}
+          <Ionicons name="checkmark-circle-outline" size={22} color={COLORS.card} />
+          <Text style={styles.saveBtnText}>
+            {isEditing ? 'Update Product' : 'Save Product'}
+          </Text>
         </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -350,34 +363,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.divider,
   },
-  categoryRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  categoryChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    minHeight: 44,
-    borderRadius: 20,
-    backgroundColor: COLORS.card,
-    borderWidth: 1,
-    borderColor: COLORS.divider,
-    justifyContent: 'center',
-  },
-  categoryChipActive: {
-    backgroundColor: COLORS.blueBg,
-    borderColor: COLORS.blue,
-  },
-  categoryText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: COLORS.textSecondary,
-  },
-  categoryTextActive: {
-    color: COLORS.blue,
-    fontWeight: '700',
-  },
+  // categoryRow/categoryChip/etc removed (GA-09) — replaced by free-text TextInput
   row: {
     flexDirection: 'row',
     gap: 12,

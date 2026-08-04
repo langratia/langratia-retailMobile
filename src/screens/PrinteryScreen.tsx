@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Header } from '../components/Header';
 import { COLORS, SHADOWS } from '../theme/theme';
 import { useAppStore } from '../store/useAppStore';
+import { isTimestampToday, resolveTransactionTimestamp } from '../utils/dateUtils';
 
 import { SuccessModal } from '../components/SuccessModal';
 
@@ -36,21 +37,14 @@ export const PrinteryScreen = ({ navigation }: any) => {
     amount: '',
   });
 
-  // Calculate today's total printery income (Memoized)
+  // PS-01: use reliable timestamp-based today detection via dateUtils.
   const todayPrinteryIncome = useMemo(() => {
-    const todayFormatted = new Date().toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-
     return transactions
-      .filter(
-        (tx) =>
-          tx.type === 'income' &&
-          tx.category === 'Printery Services' &&
-          (tx.date === 'Today' || tx.date === todayFormatted)
-      )
+      .filter((tx) => {
+        if (tx.type !== 'income' || tx.category !== 'Printery Services') return false;
+        const ts = resolveTransactionTimestamp(tx.createdAt, tx.date);
+        return ts !== null && isTimestampToday(ts);
+      })
       .reduce((sum, tx) => sum + tx.amount, 0);
   }, [transactions]);
 
@@ -84,7 +78,7 @@ export const PrinteryScreen = ({ navigation }: any) => {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <Header title="Printery POS" showNotification={false} />
 
