@@ -81,8 +81,6 @@ export const CashbookScreen = ({ navigation }: any) => {
   const renderListHeader = useMemo(
     () => (
       <View style={styles.headerComponentContainer}>
-        <Text style={styles.subHeader}>Track all your money in and out</Text>
-
         {/* 3 Stat Cards Row */}
         <ScrollView
           horizontal
@@ -265,12 +263,7 @@ const styles = StyleSheet.create({
   },
   headerComponentContainer: {
     marginBottom: 8,
-  },
-  subHeader: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
     marginTop: 16,
-    marginBottom: 16,
   },
   exportBtn: {
     flexDirection: 'row',

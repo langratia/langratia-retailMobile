@@ -81,15 +81,15 @@ export const SettingsScreen = ({ navigation }: any) => {
     });
     setSuccessConfig({
       visible: true,
-      title: 'Settings Saved! 🎉',
-      subtitle: 'Your business configuration and 4-digit security PIN have been updated successfully.',
+      title: 'Settings Saved',
+      subtitle: 'Your business preferences have been updated.',
     });
   }, [businessName, ownerName, currency, lowStockThreshold, securityPin, updateSettings]);
 
   const handleResetData = useCallback(() => {
     Alert.alert(
       'Reset All Data',
-      'Are you sure you want to delete all products and sales data? This will clear all records and set the app to a clean state for IVAN A.K.A Electronics.',
+      'Are you sure you want to delete all products and sales data? This will clear all records and set the app to a clean state for your business.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -97,12 +97,12 @@ export const SettingsScreen = ({ navigation }: any) => {
           style: 'destructive',
           onPress: () => {
             resetAllData();
-            setBusinessName('IVAN A.K.A Electronics');
-            setOwnerName('Ivan');
+            setBusinessName('My Business');
+            setOwnerName('Manager');
             setSuccessConfig({
               visible: true,
               title: 'Data Wiped',
-              subtitle: 'All app data has been reset to a brand new state!',
+              subtitle: 'All app data has been reset.',
             });
           },
         },
@@ -138,8 +138,6 @@ export const SettingsScreen = ({ navigation }: any) => {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.subHeader}>Configure business profile and preferences</Text>
-
         {/* Business Settings Card */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Business Profile</Text>
@@ -150,7 +148,7 @@ export const SettingsScreen = ({ navigation }: any) => {
               style={styles.input}
               value={businessName}
               onChangeText={setBusinessName}
-              placeholder="e.g. IVAN A.K.A Electronics"
+              placeholder="e.g. My Business"
               placeholderTextColor={COLORS.textMuted}
               accessibilityLabel="Business name input"
             />
@@ -321,11 +319,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 40,
-  },
-  subHeader: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    marginBottom: 16,
   },
   healthCard: {
     backgroundColor: COLORS.greenBg,

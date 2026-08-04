@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '../store/useAppStore';
-import { COLORS } from '../theme/theme';
+import { COLORS, SHADOWS } from '../theme/theme';
 import { Header } from '../components/Header';
 import { StatCard } from '../components/StatCard';
 import { ProductItemCard } from '../components/ProductItemCard';
@@ -93,8 +93,6 @@ export const InventoryScreen = ({ route, navigation }: any) => {
   const renderListHeader = useMemo(
     () => (
       <View style={styles.headerComponentContainer}>
-        <Text style={styles.subHeader}>Manage your products and stock</Text>
-
         {/* Search Bar & Filter Toggle */}
         <View style={styles.searchRow}>
           <View style={styles.searchContainer}>
@@ -135,7 +133,7 @@ export const InventoryScreen = ({ route, navigation }: any) => {
           {/* Top Primary Stock Value Row */}
           <View style={styles.heroTopRow}>
             <View style={{ flex: 1, marginRight: 8 }}>
-              <Text style={styles.heroLabel}>TOTAL INVENTORY VALUE</Text>
+              <Text style={styles.heroLabel}>Total Inventory Value</Text>
               <Text
                 style={styles.heroStockValue}
                 numberOfLines={1}
@@ -199,19 +197,7 @@ export const InventoryScreen = ({ route, navigation }: any) => {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{ flexDirection: 'row', gap: 8, marginVertical: 8 }}
         >
-          {[
-            'All',
-            'Low Stock',
-            'Smartphones',
-            'Feature Phones',
-            'Accessories',
-            'Audio',
-            'Storage',
-            'Wearables',
-            'Electronics',
-            'Printery Services',
-            'General',
-          ].map((cat) => {
+          {['All', 'Low Stock'].map((cat) => {
             const isActive = categoryFilter === cat;
             const isLowStock = cat === 'Low Stock';
             return (
@@ -299,9 +285,13 @@ export const InventoryScreen = ({ route, navigation }: any) => {
     () => (
       <View style={styles.emptyContainer}>
         <Ionicons name="cube-outline" size={48} color={COLORS.textMuted} />
-        <Text style={styles.emptyTitle}>No Products Found</Text>
+        <Text style={styles.emptyTitle}>
+          {products.length === 0 ? 'Your Inventory is Empty' : 'No Products Found'}
+        </Text>
         <Text style={styles.emptySub}>
-          Try adjusting your search query or clear your category filter.
+          {products.length === 0
+            ? 'Tap the + button to add your first product to the catalog.'
+            : 'Try adjusting your search query or clear your category filter.'}
         </Text>
       </View>
     ),
@@ -339,12 +329,7 @@ const styles = StyleSheet.create({
   },
   headerComponentContainer: {
     marginBottom: 8,
-  },
-  subHeader: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
     marginTop: 16,
-    marginBottom: 16,
   },
   searchRow: {
     flexDirection: 'row',

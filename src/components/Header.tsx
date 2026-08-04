@@ -30,7 +30,7 @@ export const Header: React.FC<HeaderProps> = ({
   const handleNotificationPress = useCallback(() => {
     if (lowStockCount > 0) {
       Alert.alert(
-        '🔔 Business Alerts',
+        'Business Alerts',
         `You have ${lowStockCount} item(s) running low on stock! Check your Inventory to replenish.`,
         [
           {
@@ -43,7 +43,7 @@ export const Header: React.FC<HeaderProps> = ({
       );
     } else {
       Alert.alert(
-        '🔔 Business Alerts',
+        'Business Alerts',
         'All stock levels and financial records are healthy!'
       );
     }

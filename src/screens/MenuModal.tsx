@@ -255,7 +255,7 @@ export const MenuModal = ({ navigation }: any) => {
 
         {/* Version Footer */}
         <View style={styles.versionFooter}>
-          <Text style={styles.versionText}>v1.2.0 • IVAN A.K.A Electronics POS</Text>
+          <Text style={styles.versionText}>v1.2.0</Text>
         </View>
       </ScrollView>
 

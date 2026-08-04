@@ -32,7 +32,7 @@ export const SuccessModal: React.FC<SuccessModalProps> = ({
   title,
   subtitle,
   amount,
-  badgeText = 'TRANSACTION COMPLETED 🎉',
+  badgeText = 'Transaction Completed',
   iconName = 'checkmark-circle',
   iconColor = COLORS.green,
   primaryBtnText = 'Done',

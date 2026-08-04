@@ -7,6 +7,7 @@ import {
   Platform,
   Alert,
   ScrollView,
+  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
@@ -23,9 +24,35 @@ export const LoginScreen = () => {
   const [pin, setPin] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [correctPin, setCorrectPin] = useState<string>('1234');
+  const [isBiometricMode, setIsBiometricMode] = useState<boolean | null>(null);
+  const [isSuccess, setIsSuccess] = useState(false);
+  
+  const scaleAnim = React.useRef(new Animated.Value(0)).current;
+  const rotateAnim = React.useRef(new Animated.Value(0)).current;
+
+  const playSuccessAnimation = useCallback(() => {
+    setIsSuccess(true);
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+        friction: 6,
+        tension: 40,
+      }),
+      Animated.timing(rotateAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      })
+    ]).start(() => {
+      setTimeout(() => {
+        login();
+      }, 400); // Small delay after animation finishes before navigating
+    });
+  }, [login, scaleAnim, rotateAnim]);
 
   React.useEffect(() => {
-    const loadPin = async () => {
+    const loadPinAndBiometric = async () => {
       try {
         const storedPin = await SecureStore.getItemAsync('SECURITY_PIN');
         if (storedPin) {
@@ -34,9 +61,26 @@ export const LoginScreen = () => {
       } catch (error) {
         console.error('Failed to load secure PIN', error);
       }
+      
+      const hasHardware = await LocalAuthentication.hasHardwareAsync();
+      const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+      
+      if (hasHardware && isEnrolled) {
+        setIsBiometricMode(true);
+        const result = await LocalAuthentication.authenticateAsync({
+          promptMessage: `Unlock ${settings.businessName || 'IVAN A.K.A Electronics'}`,
+          fallbackLabel: 'Use PIN',
+          disableDeviceFallback: false,
+        });
+        if (result.success) {
+          playSuccessAnimation();
+        }
+      } else {
+        setIsBiometricMode(false);
+      }
     };
-    loadPin();
-  }, []);
+    loadPinAndBiometric();
+  }, [settings.businessName, login]);
 
   const handleKeyPress = useCallback(
     (digit: string) => {
@@ -48,13 +92,13 @@ export const LoginScreen = () => {
           if (nextPin === correctPin) {
             setTimeout(() => {
               setPin('');
-              login();
+              playSuccessAnimation();
             }, 150);
           } else {
             setTimeout(() => {
               setErrorMessage('Incorrect Security PIN! Please try again.');
               Alert.alert(
-                'Access Denied 🔒',
+                'Access Denied',
                 'Incorrect 4-digit Security PIN. Default PIN is 1234.'
               );
               setPin('');
@@ -76,11 +120,11 @@ export const LoginScreen = () => {
   const handleManualLogin = useCallback(() => {
     if (pin === correctPin) {
       setPin('');
-      login();
+      playSuccessAnimation();
     } else {
       setErrorMessage('Incorrect Security PIN! Default PIN is 1234.');
       Alert.alert(
-        'Access Denied 🔒',
+        'Access Denied',
         'Please enter the correct 4-digit Security PIN (Default: 1234).'
       );
       setPin('');
@@ -92,8 +136,7 @@ export const LoginScreen = () => {
     const isEnrolled = await LocalAuthentication.isEnrolledAsync();
 
     if (!hasHardware || !isEnrolled) {
-      Alert.alert('Not Supported', 'Biometric authentication is not set up on this device.');
-      return;
+      return; // Do nothing silently if user manually triggers and no hardware
     }
 
     const result = await LocalAuthentication.authenticateAsync({
@@ -103,9 +146,9 @@ export const LoginScreen = () => {
     });
 
     if (result.success) {
-      login();
+      playSuccessAnimation();
     }
-  }, [settings.businessName, login]);
+  }, [settings.businessName, playSuccessAnimation]);
 
   return (
     <View
@@ -114,17 +157,26 @@ export const LoginScreen = () => {
         { paddingTop: topPadding, paddingBottom: Math.max(insets.bottom, 20) },
       ]}
     >
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        bounces={false}
-      >
-        {/* Top Splash Header Badge */}
-        <View style={styles.splashHeaderBadge}>
-          <View style={styles.statusDot} />
-          <Text style={styles.splashBadgeText}>100% OFFLINE RETAIL SYSTEM</Text>
+      {isSuccess ? (
+        <View style={styles.successContainer}>
+          <Animated.View style={{
+            transform: [
+              { scale: scaleAnim },
+              { rotate: rotateAnim.interpolate({ inputRange: [0, 1], outputRange: ['-120deg', '0deg'] }) }
+            ]
+          }}>
+            <Ionicons name="checkmark-circle" size={120} color={COLORS.green} />
+          </Animated.View>
+          <Animated.Text style={[styles.successText, { opacity: rotateAnim }]}>
+            Access Granted
+          </Animated.Text>
         </View>
-
+      ) : (
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+        >
         {/* Brand Logo & Splash Banner */}
         <View style={styles.brandBox}>
           {/* Custom Luxury Monogram Brand Emblem for IVAN ELECTRONICS */}
@@ -166,119 +218,134 @@ export const LoginScreen = () => {
           <View style={styles.dividerLine} />
 
           <Text style={styles.appTagline}>
-            Enter 4-digit PIN or use Biometrics to open application
+            {isBiometricMode
+              ? 'App is locked. Touch the fingerprint sensor to open.'
+              : 'Enter 4-digit PIN to open application'}
           </Text>
         </View>
 
-        {/* Error Message Feedback */}
-        {errorMessage !== '' && (
-          <View style={styles.errorBanner}>
-            <Ionicons name="alert-circle" size={16} color={COLORS.red} />
-            <Text style={styles.errorBannerText}>{errorMessage}</Text>
+        {isBiometricMode === true ? (
+          <View style={styles.biometricContainer}>
+            <Ionicons name="lock-closed" size={48} color={COLORS.green} style={{ marginBottom: 16 }} />
+            <Text style={styles.biometricTitle}>App Locked</Text>
+            
+            <Pressable
+              style={({ pressed }) => [
+                styles.quickUnlockBtn,
+                { marginTop: 24, width: 220 },
+                pressed && styles.quickUnlockPressed,
+              ]}
+              onPress={handleBiometricAuth}
+            >
+              <Ionicons name="finger-print" size={20} color="#FFFFFF" />
+              <Text style={styles.quickUnlockText}>UNLOCK</Text>
+            </Pressable>
+
+            <Pressable
+              style={{ marginTop: 24, padding: 12 }}
+              onPress={() => setIsBiometricMode(false)}
+            >
+              <Text style={{ color: COLORS.textSecondary, fontSize: 13, fontWeight: '600' }}>
+                Use App PIN Instead
+              </Text>
+            </Pressable>
           </View>
-        )}
+        ) : (
+          <>
+            {/* Error Message Feedback */}
+            {errorMessage !== '' && (
+              <View style={styles.errorBanner}>
+                <Ionicons name="alert-circle" size={16} color={COLORS.red} />
+                <Text style={styles.errorBannerText}>{errorMessage}</Text>
+              </View>
+            )}
 
-        {/* PIN Indicator Dots */}
-        <View style={styles.pinIndicatorRow}>
-          {[0, 1, 2, 3].map((idx) => {
-            const isFilled = pin.length > idx;
-            return (
-              <View
-                key={idx}
-                style={[
-                  styles.pinDot,
-                  isFilled && styles.pinDotFilled,
-                  errorMessage !== '' && styles.pinDotError,
-                ]}
-              />
-            );
-          })}
-        </View>
+            {/* PIN Indicator Dots */}
+            <View style={styles.pinIndicatorRow}>
+              {[0, 1, 2, 3].map((idx) => {
+                const isFilled = pin.length > idx;
+                return (
+                  <View
+                    key={idx}
+                    style={[
+                      styles.pinDot,
+                      isFilled && styles.pinDotFilled,
+                      errorMessage !== '' && styles.pinDotError,
+                    ]}
+                  />
+                );
+              })}
+            </View>
 
-        {/* 3x4 Numeric Keypad */}
-        <View style={styles.keypadGrid}>
-          {[['1', '2', '3'], ['4', '5', '6'], ['7', '8', '9']].map((row, rIdx) => (
-            <View key={rIdx} style={styles.keypadRow}>
-              {row.map((num) => (
+            {/* 3x4 Numeric Keypad */}
+            <View style={styles.keypadGrid}>
+              {[['1', '2', '3'], ['4', '5', '6'], ['7', '8', '9']].map((row, rIdx) => (
+                <View key={rIdx} style={styles.keypadRow}>
+                  {row.map((num) => (
+                    <Pressable
+                      key={num}
+                      style={({ pressed }) => [
+                        styles.keyBtn,
+                        pressed && styles.keyBtnPressed,
+                      ]}
+                      onPress={() => handleKeyPress(num)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Keypad digit ${num}`}
+                    >
+                      <Text style={styles.keyText}>{num}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              ))}
+
+              {/* Bottom Keypad Row: Empty, 0, Backspace */}
+              <View style={styles.keypadRow}>
+                <View style={[styles.keyBtn, { borderWidth: 0, backgroundColor: 'transparent', shadowOpacity: 0, elevation: 0 }]} />
+
                 <Pressable
-                  key={num}
                   style={({ pressed }) => [
                     styles.keyBtn,
                     pressed && styles.keyBtnPressed,
                   ]}
-                  onPress={() => handleKeyPress(num)}
+                  onPress={() => handleKeyPress('0')}
                   accessibilityRole="button"
-                  accessibilityLabel={`Keypad digit ${num}`}
+                  accessibilityLabel="Keypad digit 0"
                 >
-                  <Text style={styles.keyText}>{num}</Text>
+                  <Text style={styles.keyText}>0</Text>
                 </Pressable>
-              ))}
+
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.keyBtn,
+                    styles.iconKeyBtn,
+                    pressed && styles.keyBtnPressed,
+                  ]}
+                  onPress={handleDelete}
+                  accessibilityRole="button"
+                  accessibilityLabel="Backspace digit"
+                >
+                  <Ionicons name="backspace-outline" size={24} color={COLORS.textSecondary} />
+                </Pressable>
+              </View>
             </View>
-          ))}
 
-          {/* Bottom Keypad Row: Biometric, 0, Backspace */}
-          <View style={styles.keypadRow}>
+            {/* Validate Security PIN Button */}
             <Pressable
               style={({ pressed }) => [
-                styles.keyBtn,
-                styles.iconKeyBtn,
-                pressed && styles.keyBtnPressed,
+                styles.quickUnlockBtn,
+                pressed && styles.quickUnlockPressed,
               ]}
-              onPress={handleBiometricAuth}
+              onPress={handleManualLogin}
               accessibilityRole="button"
-              accessibilityLabel="Unlock with Fingerprint or Face ID"
+              accessibilityLabel="Validate 4-digit PIN and open application"
             >
-              <Ionicons name="finger-print-outline" size={28} color={COLORS.green} />
+              <Ionicons name="lock-open-outline" size={20} color="#FFFFFF" />
+              <Text style={styles.quickUnlockText}>ENTER APPLICATION</Text>
             </Pressable>
-
-            <Pressable
-              style={({ pressed }) => [
-                styles.keyBtn,
-                pressed && styles.keyBtnPressed,
-              ]}
-              onPress={() => handleKeyPress('0')}
-              accessibilityRole="button"
-              accessibilityLabel="Keypad digit 0"
-            >
-              <Text style={styles.keyText}>0</Text>
-            </Pressable>
-
-            <Pressable
-              style={({ pressed }) => [
-                styles.keyBtn,
-                styles.iconKeyBtn,
-                pressed && styles.keyBtnPressed,
-              ]}
-              onPress={handleDelete}
-              accessibilityRole="button"
-              accessibilityLabel="Backspace digit"
-            >
-              <Ionicons name="backspace-outline" size={24} color={COLORS.textSecondary} />
-            </Pressable>
-          </View>
-        </View>
-
-        {/* Validate Security PIN Button */}
-        <Pressable
-          style={({ pressed }) => [
-            styles.quickUnlockBtn,
-            pressed && styles.quickUnlockPressed,
-          ]}
-          onPress={handleManualLogin}
-          accessibilityRole="button"
-          accessibilityLabel="Validate 4-digit PIN and open application"
-        >
-          <Ionicons name="lock-open-outline" size={20} color="#FFFFFF" />
-          <Text style={styles.quickUnlockText}>ENTER APPLICATION</Text>
-        </Pressable>
-
-        {/* System Footer */}
-        <View style={styles.footerInfo}>
-          <Text style={styles.footerText}>
-            Powered by IVAN A.K.A Electronics POS
-          </Text>
-        </View>
-      </ScrollView>
+          </>
+        )}
+        </ScrollView>
+      )}
     </View>
   );
 };
@@ -534,13 +601,27 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     letterSpacing: 0.8,
   },
-  footerInfo: {
-    marginTop: 20,
+  biometricContainer: {
     alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 20,
+    width: '100%',
   },
-  footerText: {
-    fontSize: 11,
-    color: COLORS.textMuted,
-    fontWeight: '500',
+  biometricTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: COLORS.textPrimary,
+  },
+  successContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  successText: {
+    marginTop: 20,
+    fontSize: 22,
+    fontWeight: '800',
+    color: COLORS.green,
+    letterSpacing: 0.5,
   },
 });

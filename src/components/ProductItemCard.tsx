@@ -29,14 +29,14 @@ interface ProductItemCardProps {
   onPressDetails?: () => void;
 }
 
-export const ProductItemCard: React.FC<ProductItemCardProps> = React.memo(({
+export const ProductItemCard = React.memo(({
   product,
   currency = 'UGX',
   onAddStock,
   onRemoveStock,
   onEdit,
   onPressDetails,
-}) => {
+}: ProductItemCardProps) => {
   const [expanded, setExpanded] = useState(false);
 
   const toggleExpand = () => {

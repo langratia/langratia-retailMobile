@@ -47,17 +47,9 @@ export const AddEditProductModal = ({ route, navigation }: any) => {
     amount: '',
   });
 
-  const categories: ProductCategory[] = [
-    'Smartphones',
-    'Feature Phones',
-    'Accessories',
-    'Audio',
-    'Storage',
-    'Wearables',
-    'Electronics',
-    'Printery Services',
-    'General',
-  ];
+  const [nameError, setNameError] = useState('');
+  const [priceError, setPriceError] = useState('');
+  const [qtyError, setQtyError] = useState('');
 
   // Calculated Profit Margin & Total Stock Value Preview (Memoized)
   const { unitProfit, totalStockVal, isLoss } = useMemo(() => {
@@ -76,23 +68,30 @@ export const AddEditProductModal = ({ route, navigation }: any) => {
   }, [buyPrice, sellPrice, quantity]);
 
   const handleSave = useCallback(() => {
+    let isValid = true;
+    setNameError('');
+    setPriceError('');
+    setQtyError('');
+
     if (!name.trim()) {
-      Alert.alert('Validation Error', 'Please enter a product name.');
-      return;
+      setNameError('Please enter a product name.');
+      isValid = false;
     }
     const bPrice = parseFloat(buyPrice);
     const sPrice = sellPrice.trim() ? parseFloat(sellPrice) : bPrice;
     const qty = parseInt(quantity, 10);
 
     if (isNaN(bPrice) || bPrice < 0) {
-      Alert.alert('Validation Error', 'Please enter a valid buying price.');
-      return;
+      setPriceError('Please enter a valid buying price.');
+      isValid = false;
     }
 
     if (isNaN(qty) || qty < 0) {
-      Alert.alert('Validation Error', 'Please enter a valid stock quantity.');
-      return;
+      setQtyError('Please enter a valid stock quantity.');
+      isValid = false;
     }
+
+    if (!isValid) return;
 
     setIsSubmitting(true);
 
@@ -117,7 +116,7 @@ export const AddEditProductModal = ({ route, navigation }: any) => {
       setIsSubmitting(false);
 
       setSuccessInfo({
-        title: isEditing ? 'Product Updated! 📦' : 'Stock Item Added! 🎉',
+        title: isEditing ? 'Product Updated' : 'Stock Item Added',
         subtitle: isEditing
           ? `${name} profile and inventory pricing updated.`
           : `${qty} unit(s) of ${name} added to catalog.`,
@@ -156,45 +155,30 @@ export const AddEditProductModal = ({ route, navigation }: any) => {
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Product Name</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, nameError ? styles.inputError : null]}
             value={name}
-            onChangeText={setName}
+            onChangeText={(text) => {
+              setName(text);
+              if (nameError) setNameError('');
+            }}
             placeholder="e.g. Samsung A16 (128GB)"
             placeholderTextColor={COLORS.textMuted}
             accessibilityLabel="Product name input"
           />
+          {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
         </View>
 
-        {/* Category Chips */}
+        {/* Category Input */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Category</Text>
-          <View style={styles.categoryRow}>
-            {categories.map((cat) => {
-              const isSelected = category === cat;
-              return (
-                <Pressable
-                  key={cat}
-                  style={({ pressed }) => [
-                    styles.categoryChip,
-                    isSelected && styles.categoryChipActive,
-                    pressed && styles.pressed,
-                  ]}
-                  onPress={() => setCategory(cat)}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Select category ${cat}`}
-                >
-                  <Text
-                    style={[
-                      styles.categoryText,
-                      isSelected && styles.categoryTextActive,
-                    ]}
-                  >
-                    {cat}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
+          <TextInput
+            style={styles.input}
+            value={category}
+            onChangeText={setCategory}
+            placeholder="e.g. Electronics"
+            placeholderTextColor={COLORS.textMuted}
+            accessibilityLabel="Product category input"
+          />
         </View>
 
         {/* Prices Row */}
@@ -202,9 +186,12 @@ export const AddEditProductModal = ({ route, navigation }: any) => {
           <View style={[styles.inputGroup, { flex: 1 }]}>
             <Text style={styles.label}>Buying Price ({settings.currency})</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, priceError ? styles.inputError : null]}
               value={buyPrice}
-              onChangeText={setBuyPrice}
+              onChangeText={(text) => {
+                setBuyPrice(text);
+                if (priceError) setPriceError('');
+              }}
               placeholder="0.00"
               keyboardType="decimal-pad"
               placeholderTextColor={COLORS.textMuted}
@@ -225,19 +212,24 @@ export const AddEditProductModal = ({ route, navigation }: any) => {
             />
           </View>
         </View>
+        {priceError ? <Text style={[styles.errorText, { marginTop: -12, marginBottom: 16 }]}>{priceError}</Text> : null}
 
         {/* Quantity Input */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Stock Quantity (Units)</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, qtyError ? styles.inputError : null]}
             value={quantity}
-            onChangeText={setQuantity}
+            onChangeText={(text) => {
+              setQuantity(text);
+              if (qtyError) setQtyError('');
+            }}
             placeholder="0"
             keyboardType="number-pad"
             placeholderTextColor={COLORS.textMuted}
             accessibilityLabel="Stock quantity input"
           />
+          {qtyError ? <Text style={styles.errorText}>{qtyError}</Text> : null}
         </View>
 
         {/* Profit Preview Card */}
@@ -294,7 +286,7 @@ export const AddEditProductModal = ({ route, navigation }: any) => {
         title={successInfo.title}
         subtitle={successInfo.subtitle}
         amount={successInfo.amount}
-        badgeText="INVENTORY CATALOG UPDATED 📦"
+        badgeText="Inventory Catalog Updated"
         iconName="cube"
         iconColor={COLORS.blue}
         primaryBtnText="Done"
@@ -429,5 +421,13 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.7,
+  },
+  inputError: {
+    borderColor: COLORS.red,
+  },
+  errorText: {
+    color: COLORS.red,
+    fontSize: 12,
+    marginTop: 4,
   },
 });

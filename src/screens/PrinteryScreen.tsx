@@ -73,8 +73,8 @@ export const PrinteryScreen = ({ navigation }: any) => {
     });
 
     setRecordedData({
-      title: `${selectedService.name} Logged! 🎉`,
-      subtitle: `Recorded for ${selectedService.name}. Cashbook credited successfully!`,
+      title: `${selectedService.name} Logged`,
+      subtitle: `Recorded for ${selectedService.name}. Cashbook credited.`,
       amount: `+${settings.currency} ${numAmount.toLocaleString()}`,
     });
     setShowSuccessModal(true);
@@ -210,7 +210,7 @@ export const PrinteryScreen = ({ navigation }: any) => {
         title={recordedData.title}
         subtitle={recordedData.subtitle}
         amount={recordedData.amount}
-        badgeText="PRINTERY INFLOW LOGGED 🖨️"
+        badgeText="PRINTERY INFLOW LOGGED"
         iconName="print"
         iconColor={COLORS.purple}
         primaryBtnText="Done"

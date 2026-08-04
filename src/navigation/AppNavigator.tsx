@@ -1,5 +1,5 @@
-import React from 'react';
-import { View } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, AppState, AppStateStatus } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -83,7 +83,22 @@ function BottomTabNavigator() {
 }
 
 export function AppNavigator() {
-  const { settings } = useAppStore();
+  const { settings, logout } = useAppStore();
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
+      // Auto-lock the app if it goes to the background or inactive state for security
+      if (nextAppState === 'background' || nextAppState === 'inactive') {
+        if (settings.isLoggedIn) {
+          logout();
+        }
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [settings.isLoggedIn, logout]);
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>

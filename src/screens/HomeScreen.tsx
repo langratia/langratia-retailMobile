@@ -125,10 +125,7 @@ export const HomeScreen = ({ navigation }: any) => {
         {/* Dynamic Greeting Banner */}
         <View style={styles.greetingContainer}>
           <Text style={styles.greetingTitle}>
-            {greetingTime}, {settings.ownerName} 👋
-          </Text>
-          <Text style={styles.greetingSub}>
-            Here is your live business performance summary.
+            {greetingTime}, {settings.ownerName}
           </Text>
         </View>
 
@@ -196,9 +193,5 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.textPrimary,
     marginBottom: 4,
-  },
-  greetingSub: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
   },
 });

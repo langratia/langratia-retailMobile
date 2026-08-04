@@ -29,6 +29,8 @@ export const AddTransactionModal = ({ route, navigation }: any) => {
   const [type, setType] = useState<TransactionType>(defaultType);
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
+  const [amountError, setAmountError] = useState('');
+  const [descError, setDescError] = useState('');
   const [category, setCategory] = useState(type === 'income' ? 'Sales' : 'Rent');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successInfo, setSuccessInfo] = useState<{ title: string; subtitle: string; amount: string; isExpense: boolean }>({
@@ -54,15 +56,21 @@ export const AddTransactionModal = ({ route, navigation }: any) => {
   );
 
   const handleSave = useCallback(() => {
+    let isValid = true;
+    setAmountError('');
+    setDescError('');
+
     const numAmount = parseFloat(amount);
     if (isNaN(numAmount) || numAmount <= 0) {
-      Alert.alert('Validation Error', 'Please enter a valid positive transaction amount.');
-      return;
+      setAmountError('Please enter a valid positive transaction amount.');
+      isValid = false;
     }
     if (!description.trim()) {
-      Alert.alert('Validation Error', 'Please enter a description for this transaction.');
-      return;
+      setDescError('Please enter a description for this transaction.');
+      isValid = false;
     }
+
+    if (!isValid) return;
 
     addTransaction({
       type,
@@ -73,7 +81,7 @@ export const AddTransactionModal = ({ route, navigation }: any) => {
 
     const isExp = type === 'expense';
     setSuccessInfo({
-      title: isExp ? 'Expense Logged 💸' : 'Income Recorded 💵',
+      title: isExp ? 'Expense Logged' : 'Income Recorded',
       subtitle: `${description} (${category}) recorded to cashbook.`,
       amount: `${isExp ? '-' : '+'}${settings.currency} ${numAmount.toLocaleString()}`,
       isExpense: isExp,
@@ -176,15 +184,18 @@ export const AddTransactionModal = ({ route, navigation }: any) => {
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Amount ({settings.currency})</Text>
           <TextInput
-            style={styles.amountInput}
+            style={[styles.amountInput, amountError ? styles.inputError : null]}
             value={amount}
-            onChangeText={setAmount}
+            onChangeText={(text) => {
+              setAmount(text);
+              if (amountError) setAmountError('');
+            }}
             placeholder="0.00"
             keyboardType="decimal-pad"
             placeholderTextColor={COLORS.textMuted}
             accessibilityLabel="Transaction amount"
-            autoFocus
           />
+          {amountError ? <Text style={styles.errorText}>{amountError}</Text> : null}
         </View>
 
         {/* Quick Amount Presets */}
@@ -292,7 +303,7 @@ export const AddTransactionModal = ({ route, navigation }: any) => {
         title={successInfo.title}
         subtitle={successInfo.subtitle}
         amount={successInfo.amount}
-        badgeText={successInfo.isExpense ? 'CASHBOOK EXPENSE LOGGED 💸' : 'CASHBOOK INFLOW LOGGED 💵'}
+        badgeText={successInfo.isExpense ? 'Cashbook Expense Logged' : 'Cashbook Inflow Logged'}
         iconName={successInfo.isExpense ? 'receipt' : 'cash'}
         iconColor={successInfo.isExpense ? COLORS.red : COLORS.green}
         primaryBtnText="Done"
@@ -493,5 +504,13 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.7,
+  },
+  inputError: {
+    borderColor: COLORS.red,
+  },
+  errorText: {
+    color: COLORS.red,
+    fontSize: 12,
+    marginTop: 4,
   },
 });

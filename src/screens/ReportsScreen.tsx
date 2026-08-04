@@ -82,8 +82,6 @@ export const ReportsScreen = ({ navigation }: any) => {
       />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <Text style={styles.subHeader}>Business health & performance analytics</Text>
-
         {/* Time Range Filter Pills */}
         <View style={styles.filterPillsRow}>
           {(['All Time', 'This Month', 'Today'] as const).map((range) => {
@@ -236,13 +234,8 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 20,
+    paddingTop: 16,
     paddingBottom: 110,
-  },
-  subHeader: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    marginTop: 16,
-    marginBottom: 16,
   },
   exportBtn: {
     flexDirection: 'row',

@@ -22,8 +22,8 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = React.mem
   const iconName = isCredit
     ? 'document-text-outline'
     : isIncome
-    ? 'download-outline'
-    : 'upload-outline';
+    ? 'arrow-down-outline'
+    : 'arrow-up-outline';
   const iconBg = isCredit
     ? COLORS.amberBg
     : isIncome
