@@ -6,9 +6,9 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "splash": {
-      "image": "./assets/retailflow-splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "image": "./assets/ivanBanner.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#F0F4F8"
     },
     "userInterfaceStyle": "light",
     "ios": {
