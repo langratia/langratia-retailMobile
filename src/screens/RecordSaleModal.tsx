@@ -40,7 +40,7 @@ export const RecordSaleModal = ({ navigation }: any) => {
 
   // 1. Available Stock Products (Memoized)
   const availableProducts = useMemo(
-    () => products.filter((p) => p.quantity > 0),
+    () => products.filter((p) => p.quantity > 0 && !p.isArchived),
     [products]
   );
 

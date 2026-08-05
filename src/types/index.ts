@@ -8,6 +8,7 @@ export interface Product {
   sellPrice: number;
   quantity: number;
   imageUri?: string;
+  isArchived?: boolean;
 }
 
 export type TransactionType = 'income' | 'expense';

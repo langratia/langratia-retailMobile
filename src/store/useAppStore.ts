@@ -75,9 +75,14 @@ export const useAppStore = create<AppState>()(
       },
 
       deleteProduct: (id) => {
-        set((state) => ({
-          products: state.products.filter((p) => p.id !== id),
-        }));
+        const hasTransactions = get().transactions.some((tx) => tx.productId === id);
+        if (hasTransactions) {
+          get().updateProduct(id, { isArchived: true });
+        } else {
+          set((state) => ({
+            products: state.products.filter((p) => p.id !== id),
+          }));
+        }
       },
 
       adjustStock: (productId, delta) => {

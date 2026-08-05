@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { View, AppState, AppStateStatus } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -86,6 +86,8 @@ export function AppNavigator() {
   // isLoggedIn is now a top-level store property (not part of settings)
   const { isLoggedIn, logout } = useAppStore();
 
+  const backgroundTimeRef = useRef<number | null>(null);
+
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
       // Lock only when the app moves to the BACKGROUND — not on `inactive`.
@@ -93,9 +95,18 @@ export function AppNavigator() {
       // interactions, and app-switcher gestures. Logging out on `inactive`
       // would cause constant unwanted logouts during normal device usage.
       if (nextAppState === 'background') {
-        if (isLoggedIn) {
-          logout();
+        backgroundTimeRef.current = Date.now();
+      } else if (nextAppState === 'active') {
+        if (backgroundTimeRef.current) {
+          const timeInBackground = Date.now() - backgroundTimeRef.current;
+          const GRACE_PERIOD = 3 * 60 * 1000; // 3 minutes
+          if (timeInBackground > GRACE_PERIOD) {
+            if (isLoggedIn) {
+              logout();
+            }
+          }
         }
+        backgroundTimeRef.current = null;
       }
     });
 

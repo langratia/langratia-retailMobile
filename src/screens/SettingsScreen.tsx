@@ -8,6 +8,7 @@ import {
   Pressable,
   Alert,
   Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
@@ -151,11 +152,15 @@ export const SettingsScreen = ({ navigation }: any) => {
         <View style={{ width: 26 }} />
       </View>
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={{ flex: 1 }}
       >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
         {/* Business Settings Card */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Business Profile</Text>
@@ -297,6 +302,7 @@ export const SettingsScreen = ({ navigation }: any) => {
           <Text style={styles.logoutText}>Log Out</Text>
         </Pressable>
       </ScrollView>
+    </KeyboardAvoidingView>
 
       <SuccessModal
         visible={successConfig.visible}

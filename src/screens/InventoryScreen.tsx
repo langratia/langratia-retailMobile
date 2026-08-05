@@ -35,9 +35,10 @@ export const InventoryScreen = ({ route, navigation }: any) => {
 
   // 1. Stats Computations (Memoized)
   const { totalProductsCount, totalUnitsCount, totalInventoryValue } = useMemo(() => {
-    const pCount = products.length;
-    const uCount = products.reduce((acc, p) => acc + p.quantity, 0);
-    const iVal = products.reduce((acc, p) => acc + p.quantity * p.buyPrice, 0);
+    const activeProducts = products.filter((p) => !p.isArchived);
+    const pCount = activeProducts.length;
+    const uCount = activeProducts.reduce((acc, p) => acc + p.quantity, 0);
+    const iVal = activeProducts.reduce((acc, p) => acc + p.quantity * p.buyPrice, 0);
     return {
       totalProductsCount: pCount,
       totalUnitsCount: uCount,
@@ -48,6 +49,8 @@ export const InventoryScreen = ({ route, navigation }: any) => {
   // 2. Filtered & Sorted Products (Memoized)
   const sortedProducts = useMemo(() => {
     const filtered = products.filter((p) => {
+      if (p.isArchived) return false;
+
       const matchesSearch =
         p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.category.toLowerCase().includes(searchQuery.toLowerCase());
@@ -70,14 +73,15 @@ export const InventoryScreen = ({ route, navigation }: any) => {
   }, [products, searchQuery, categoryFilter, sortBy, settings.lowStockThreshold]);
 
   const lowStockCount = useMemo(
-    () => products.filter((p) => p.quantity <= settings.lowStockThreshold).length,
+    () => products.filter((p) => !p.isArchived && p.quantity <= settings.lowStockThreshold).length,
     [products, settings.lowStockThreshold]
   );
 
   // IS-02: Derive unique category names from live product data so filter chips
   // always match exactly what products exist in the catalog.
   const categoryFilterOptions = useMemo(() => {
-    const uniqueCategories = Array.from(new Set(products.map((p) => p.category)))
+    const activeProducts = products.filter((p) => !p.isArchived);
+    const uniqueCategories = Array.from(new Set(activeProducts.map((p) => p.category)))
       .filter(Boolean)
       .sort((a, b) => a.localeCompare(b));
     return ['All', 'Low Stock', ...uniqueCategories];
