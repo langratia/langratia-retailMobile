@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
   Animated as RNAnimated,
   ImageBackground,
 } from 'react-native';
-import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+
 import { Ionicons } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -46,6 +46,38 @@ export const LoginScreen = () => {
 
   const scaleAnim = useRef(new RNAnimated.Value(0)).current;
   const rotateAnim = useRef(new RNAnimated.Value(0)).current;
+  const errorFadeAnim = useRef(new RNAnimated.Value(0)).current;
+
+  /**
+   * Holds the ID of the live lockout-countdown interval so we can clear it
+   * on unmount or when the lockout expires naturally.
+   */
+  const lockoutIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  /** Starts a 1-second tick that updates the error message with the real
+   *  remaining seconds, then clears itself once the lockout expires. */
+  const startLockoutCountdown = useCallback(() => {
+    if (lockoutIntervalRef.current) clearInterval(lockoutIntervalRef.current);
+
+    lockoutIntervalRef.current = setInterval(() => {
+      const remaining = lockedUntilRef.current - Date.now();
+      if (remaining <= 0) {
+        clearInterval(lockoutIntervalRef.current!);
+        lockoutIntervalRef.current = null;
+        setErrorMessage('');
+      } else {
+        const secondsLeft = Math.ceil(remaining / 1000);
+        setErrorMessage(`Too many attempts. Try again in ${secondsLeft}s.`);
+      }
+    }, 1000);
+  }, []);
+
+  // Clean up the interval on unmount to prevent memory leaks.
+  useEffect(() => {
+    return () => {
+      if (lockoutIntervalRef.current) clearInterval(lockoutIntervalRef.current);
+    };
+  }, []);
 
   const playSuccessAnimation = useCallback(() => {
     setIsSuccess(true);
@@ -67,6 +99,18 @@ export const LoginScreen = () => {
       }, 400);
     });
   }, [login, scaleAnim, rotateAnim]);
+
+  // Fade the error banner in whenever a new error message is set.
+  useEffect(() => {
+    if (errorMessage !== '') {
+      errorFadeAnim.setValue(0);
+      RNAnimated.timing(errorFadeAnim, {
+        toValue: 1,
+        duration: 280,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [errorMessage]);
 
   // ─── Load PIN on mount ────────────────────────────────────────────────────
 
@@ -95,6 +139,8 @@ export const LoginScreen = () => {
     (enteredPin: string) => {
       const now = Date.now();
       if (now < lockedUntilRef.current) {
+        // Lockout still active — the live interval handles the ongoing countdown.
+        // This branch guards against tapping during an active lockout.
         const secondsLeft = Math.ceil((lockedUntilRef.current - now) / 1000);
         setErrorMessage(`Too many attempts. Try again in ${secondsLeft}s.`);
         setPin('');
@@ -117,9 +163,10 @@ export const LoginScreen = () => {
         if (failedAttemptsRef.current >= MAX_PIN_ATTEMPTS) {
           lockedUntilRef.current = Date.now() + LOCKOUT_DURATION_MS;
           failedAttemptsRef.current = 0;
-          setErrorMessage(
-            `Too many incorrect attempts. Locked for ${LOCKOUT_DURATION_MS / 1000}s.`
-          );
+          const initialSeconds = Math.ceil(LOCKOUT_DURATION_MS / 1000);
+          setErrorMessage(`Too many incorrect attempts. Locked for ${initialSeconds}s.`);
+          // Start the live countdown — message ticks every second until unlocked.
+          startLockoutCountdown();
         } else {
           const attemptsLeft = MAX_PIN_ATTEMPTS - failedAttemptsRef.current;
           setErrorMessage(
@@ -136,6 +183,11 @@ export const LoginScreen = () => {
 
   const handleKeyPress = useCallback(
     (digit: string) => {
+      // Don't clear the countdown message while a lockout is active.
+      if (Date.now() < lockedUntilRef.current) {
+        setPin('');
+        return;
+      }
       setErrorMessage('');
       if (pin.length < 4) {
         const nextPin = pin + digit;
@@ -205,14 +257,12 @@ export const LoginScreen = () => {
 
             {/* ── Error banner ─────────────────────────────────────────────── */}
             {errorMessage !== '' && (
-              <Animated.View
-                entering={FadeIn.duration(300)}
-                exiting={FadeOut.duration(200)}
-                style={styles.errorBanner}
+              <RNAnimated.View
+                style={[styles.errorBanner, { opacity: errorFadeAnim }]}
               >
                 <Ionicons name="alert-circle" size={15} color={COLORS.red} />
                 <Text style={styles.errorBannerText}>{errorMessage}</Text>
-              </Animated.View>
+              </RNAnimated.View>
             )}
 
             {/* ── PIN indicator dots ───────────────────────────────────────── */}

@@ -157,7 +157,15 @@ export const CashbookScreen = ({ navigation }: any) => {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.filterPillsRow}
         >
-          {['All Transactions', 'Income', 'Expense', 'Credit Sales', 'Today'].map((filter) => {
+          {(
+            [
+              { label: 'All Transactions', icon: 'list-outline' },
+              { label: 'Income',           icon: 'trending-up-outline' },
+              { label: 'Expense',          icon: 'trending-down-outline' },
+              { label: 'Credit Sales',     icon: 'card-outline' },
+              { label: 'Today',            icon: 'today-outline' },
+            ] as { label: string; icon: keyof typeof Ionicons.glyphMap }[]
+          ).map(({ label: filter, icon: filterIcon }) => {
             const isActive = selectedFilter === filter;
             return (
               <Pressable
@@ -172,7 +180,7 @@ export const CashbookScreen = ({ navigation }: any) => {
                 accessibilityLabel={`Filter by ${filter}`}
               >
                 <Ionicons
-                  name="calendar-outline"
+                  name={filterIcon}
                   size={14}
                   color={isActive ? COLORS.green : COLORS.textSecondary}
                 />
@@ -250,15 +258,26 @@ export const CashbookScreen = ({ navigation }: any) => {
         title="Cash Book"
         showNotification={true}
         rightAction={
-          <Pressable
-            style={({ pressed }) => [styles.exportBtn, pressed && styles.pressed]}
-            onPress={() => navigation.navigate('StatementModal')}
-            accessibilityRole="button"
-            accessibilityLabel="View Financial Statement Table"
-          >
-            <Ionicons name="document-text-outline" size={16} color={COLORS.green} />
-            <Text style={styles.exportText}>Statement</Text>
-          </Pressable>
+          <View style={styles.headerBtnsRow}>
+            <Pressable
+              style={({ pressed }) => [styles.exportBtn, styles.profitBtn, pressed && styles.pressed]}
+              onPress={() => navigation.navigate('ProfitBreakdown')}
+              accessibilityRole="button"
+              accessibilityLabel="View Profit Breakdown"
+            >
+              <Ionicons name="pie-chart-outline" size={15} color={COLORS.green} />
+              <Text style={styles.exportText}>Profit</Text>
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [styles.exportBtn, pressed && styles.pressed]}
+              onPress={() => navigation.navigate('StatementModal')}
+              accessibilityRole="button"
+              accessibilityLabel="View Financial Statement Table"
+            >
+              <Ionicons name="document-text-outline" size={15} color={COLORS.textSecondary} />
+              <Text style={[styles.exportText, { color: COLORS.textSecondary }]}>Statement</Text>
+            </Pressable>
+          </View>
         }
       />
 
@@ -299,6 +318,19 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingVertical: 6,
     paddingHorizontal: 8,
+    borderRadius: 8,
+  },
+  // Profit button gets a green tint to stand out from Statement
+  profitBtn: {
+    backgroundColor: COLORS.greenBg,
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.3)',
+  },
+  // Wraps both header action buttons side by side
+  headerBtnsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   exportText: {
     fontSize: 13,

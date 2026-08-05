@@ -41,10 +41,9 @@ export const ReportsScreen = ({ navigation }: any) => {
       .reduce((acc, t) => acc + t.amount, 0);
 
     const netProf = income - expenses;
-    const cashBal = income - expenses;
-    // RS-01: totalBusinessValue correctly combines period-filtered cash with
-    // all-time stock. The UI below makes this split explicit to avoid confusion.
-    const totalAssets = cashBal + stockVal;
+    // RS-01: totalBusinessValue correctly combines period-filtered cash balance
+    // (netProfit) with all-time stock value.
+    const totalAssets = netProf + stockVal;
     const incomeCount = filteredTxs.filter((t) => t.type === 'income').length;
     const expenseCount = filteredTxs.filter((t) => t.type === 'expense').length;
 
@@ -55,7 +54,7 @@ export const ReportsScreen = ({ navigation }: any) => {
       totalIncome: income,
       totalExpenses: expenses,
       netProfit: netProf,
-      cashBalance: cashBal,
+      cashBalance: netProf,
       totalBusinessValue: totalAssets,
       incomeCount,
       expenseCount,

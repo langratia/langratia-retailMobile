@@ -7,15 +7,31 @@ import {
   TextInput,
   Pressable,
   Alert,
-  Platform,
   KeyboardAvoidingView,
+  LayoutAnimation,
+  Platform,
+  UIManager,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+
+// Enable LayoutAnimation on Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../store/useAppStore';
 import { ProductCategory } from '../types';
 import { COLORS, SHADOWS } from '../theme/theme';
 import { SuccessModal } from '../components/SuccessModal';
+
+const PREDEFINED_CATEGORIES = [
+  'Smartphones',
+  'Small Phones',
+  'Accessories',
+  'Electronics',
+  'Stationery',
+  'Printery',
+];
 
 export const AddEditProductModal = ({ route, navigation }: any) => {
   const existingProduct = route.params?.product;
@@ -29,6 +45,7 @@ export const AddEditProductModal = ({ route, navigation }: any) => {
   const [category, setCategory] = useState<ProductCategory>(
     existingProduct?.category || 'Smartphones'
   );
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [buyPrice, setBuyPrice] = useState(
     existingProduct ? existingProduct.buyPrice.toString() : ''
   );
@@ -187,17 +204,61 @@ export const AddEditProductModal = ({ route, navigation }: any) => {
           {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
         </View>
 
-        {/* Category Input */}
+        {/* Category Input (Modern Dropdown) */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Category</Text>
-          <TextInput
-            style={styles.input}
-            value={category}
-            onChangeText={setCategory}
-            placeholder="e.g. Electronics"
-            placeholderTextColor={COLORS.textMuted}
-            accessibilityLabel="Product category input"
-          />
+          <Pressable
+            style={styles.dropdownToggle}
+            onPress={() => {
+              LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+              setShowCategoryDropdown(!showCategoryDropdown);
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={`Category selected is ${category}. Tap to change.`}
+          >
+            <Text style={styles.dropdownToggleText}>{category}</Text>
+            <Ionicons
+              name={showCategoryDropdown ? 'chevron-up' : 'chevron-down'}
+              size={20}
+              color={COLORS.textSecondary}
+            />
+          </Pressable>
+
+          {showCategoryDropdown && (
+            <View style={styles.dropdownMenu}>
+              {PREDEFINED_CATEGORIES.map((cat) => {
+                const isSelected = category === cat;
+                return (
+                  <Pressable
+                    key={cat}
+                    style={({ pressed }) => [
+                      styles.dropdownItem,
+                      isSelected && styles.dropdownItemActive,
+                      pressed && { opacity: 0.7 },
+                    ]}
+                    onPress={() => {
+                      setCategory(cat);
+                      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                      setShowCategoryDropdown(false);
+                    }}
+                    accessibilityRole="button"
+                  >
+                    <Text
+                      style={[
+                        styles.dropdownItemText,
+                        isSelected && styles.dropdownItemTextActive,
+                      ]}
+                    >
+                      {cat}
+                    </Text>
+                    {isSelected && (
+                      <Ionicons name="checkmark-circle" size={20} color={COLORS.green} />
+                    )}
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
         </View>
 
         {/* Prices Row */}
@@ -363,7 +424,54 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.divider,
   },
-  // categoryRow/categoryChip/etc removed (GA-09) — replaced by free-text TextInput
+  
+  // ── Modern Dropdown Styles ──
+  dropdownToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: COLORS.card,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    height: 48,
+    borderWidth: 1,
+    borderColor: COLORS.divider,
+  },
+  dropdownToggleText: {
+    fontSize: 15,
+    color: COLORS.textPrimary,
+    fontWeight: '500',
+  },
+  dropdownMenu: {
+    marginTop: 8,
+    backgroundColor: COLORS.card,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: COLORS.divider,
+    paddingVertical: 6,
+    overflow: 'hidden',
+    ...SHADOWS.small,
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  dropdownItemActive: {
+    backgroundColor: COLORS.greenBg,
+  },
+  dropdownItemText: {
+    fontSize: 15,
+    color: COLORS.textSecondary,
+    fontWeight: '500',
+  },
+  dropdownItemTextActive: {
+    color: COLORS.green,
+    fontWeight: '700',
+  },
+
   row: {
     flexDirection: 'row',
     gap: 12,

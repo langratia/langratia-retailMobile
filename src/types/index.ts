@@ -67,6 +67,7 @@ export type RootStackParamList = {
   Reports: { defaultFilter?: 'all' | 'income' | 'expense' | 'credit' };
   /** Full tabular ledger — optionally pre-filtered on open */
   StatementModal: { defaultFilter?: 'all' | 'income' | 'expense' | 'credit' } | undefined;
+  ProfitBreakdown: undefined;
   MenuModal: undefined;
   Settings: undefined;
   AddEditProduct: { product?: Product } | undefined;

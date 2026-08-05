@@ -6,6 +6,7 @@ export const COLORS = {
   textMuted: '#9CA3AF',
   divider: '#E5E7EB',
   inputBg: '#F1F5F9',
+  dark: '#0F172A', // Added for the dark hero cards
   
   // Primary Accents
   green: '#10B981',

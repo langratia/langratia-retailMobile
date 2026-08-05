@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppStore } from '../store/useAppStore';
 import { COLORS } from '../theme/theme';
 import { Header } from '../components/Header';
@@ -129,7 +128,10 @@ export const HomeScreen = ({ navigation }: any) => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    // Use a plain View here — the Header component already owns top safe-area
+    // insets via its own SafeAreaView(edges=[top]). Wrapping again with
+    // SafeAreaView would double-count the inset and push content too far down.
+    <View style={styles.container}>
       <Header title={settings.businessName || 'RetailFlow'} />
 
       {/* Removed cosmetic RefreshControl — store is synchronous/reactive */}
@@ -140,7 +142,10 @@ export const HomeScreen = ({ navigation }: any) => {
         {/* Dynamic Greeting Banner */}
         <View style={styles.greetingContainer}>
           <Text style={styles.greetingTitle}>
-            {greetingTime}, {settings.ownerName}
+            {greetingTime}, {settings.ownerName} 👋
+          </Text>
+          <Text style={styles.greetingDate}>
+            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
           </Text>
         </View>
 
@@ -186,7 +191,7 @@ export const HomeScreen = ({ navigation }: any) => {
           onViewCashbook={() => navigation.navigate('Cashbook')}
         />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -200,13 +205,18 @@ const styles = StyleSheet.create({
     paddingBottom: 110,
   },
   greetingContainer: {
-    marginTop: 16,
-    marginBottom: 20,
+    marginTop: 8,
+    marginBottom: 14,
   },
   greetingTitle: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '700',
     color: COLORS.textPrimary,
-    marginBottom: 4,
+    marginBottom: 2,
+  },
+  greetingDate: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    fontWeight: '500',
   },
 });

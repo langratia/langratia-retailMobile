@@ -121,7 +121,7 @@ export const PrinteryScreen = ({ navigation }: any) => {
                 >
                   <Ionicons
                     name={service.icon}
-                    size={20}
+                    size={18}
                     color={isSelected ? service.color : COLORS.textMuted}
                   />
                   <Text
@@ -129,6 +129,9 @@ export const PrinteryScreen = ({ navigation }: any) => {
                       styles.serviceTabText,
                       isSelected && [styles.serviceTabTextActive, { color: service.color }],
                     ]}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.75}
                   >
                     {service.name}
                   </Text>
@@ -275,25 +278,28 @@ const styles = StyleSheet.create({
   },
   serviceTab: {
     flex: 1,
-    flexDirection: 'row',
+    // Column layout: icon on top, label underneath — avoids wrapping on small screens
+    flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: 5,
     paddingVertical: 12,
-    paddingHorizontal: 8,
+    paddingHorizontal: 4,
     borderRadius: 12,
     backgroundColor: COLORS.inputBg,
     borderWidth: 2,
     borderColor: 'transparent',
+    minHeight: 62,
   },
   serviceTabActive: {
     backgroundColor: COLORS.card,
     ...SHADOWS.small,
   },
   serviceTabText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     color: COLORS.textMuted,
+    textAlign: 'center',
   },
   serviceTabTextActive: {
     fontWeight: '800',

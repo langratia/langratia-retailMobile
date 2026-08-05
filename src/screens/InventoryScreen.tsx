@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, memo } from 'react';
 import {
   View,
   Text,
@@ -12,9 +12,214 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '../store/useAppStore';
 import { COLORS, SHADOWS } from '../theme/theme';
 import { Header } from '../components/Header';
-import { StatCard } from '../components/StatCard';
 import { ProductItemCard } from '../components/ProductItemCard';
 import { Product } from '../types';
+
+// ─── InventoryListHeader ──────────────────────────────────────────────────────
+// Extracted from useMemo into a proper component so FlatList can reconcile it
+// correctly and interactive elements (TextInput, Pressables) never go stale.
+interface InventoryListHeaderProps {
+  searchQuery: string;
+  onSearchChange: (q: string) => void;
+  sortBy: 'name' | 'quantity' | 'price';
+  onToggleSort: () => void;
+  currency: string;
+  totalInventoryValue: number;
+  totalProductsCount: number;
+  totalUnitsCount: number;
+  lowStockCount: number;
+  categoryFilter: string;
+  onCategoryFilterChange: (cat: string) => void;
+  categoryFilterOptions: string[];
+  sortedProductsCount: number;
+}
+
+const InventoryListHeader = memo(function InventoryListHeader({
+  searchQuery,
+  onSearchChange,
+  sortBy,
+  onToggleSort,
+  currency,
+  totalInventoryValue,
+  totalProductsCount,
+  totalUnitsCount,
+  lowStockCount,
+  categoryFilter,
+  onCategoryFilterChange,
+  categoryFilterOptions,
+  sortedProductsCount,
+}: InventoryListHeaderProps) {
+  return (
+    <View style={styles.headerComponentContainer}>
+      {/* Search Bar & Filter Toggle */}
+      <View style={styles.searchRow}>
+        <View style={styles.searchContainer}>
+          <Ionicons name="search-outline" size={20} color={COLORS.textMuted} style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search products or categories..."
+            placeholderTextColor={COLORS.textMuted}
+            value={searchQuery}
+            onChangeText={onSearchChange}
+            accessibilityLabel="Search products"
+            accessibilityHint="Type a product name or category to filter list"
+          />
+          {searchQuery !== '' && (
+            <Pressable
+              onPress={() => onSearchChange('')}
+              accessibilityRole="button"
+              accessibilityLabel="Clear search input"
+            >
+              <Ionicons name="close-circle" size={20} color={COLORS.textMuted} />
+            </Pressable>
+          )}
+        </View>
+
+        <Pressable
+          style={({ pressed }) => [styles.filterBtn, pressed && styles.pressed]}
+          onPress={onToggleSort}
+          accessibilityRole="button"
+          accessibilityLabel={`Sort products by ${sortBy}`}
+          accessibilityHint="Toggles sorting between name, stock quantity, and price"
+        >
+          <Ionicons name="options-outline" size={20} color={COLORS.green} />
+        </Pressable>
+      </View>
+
+      {/* Single Consolidated Executive Inventory Hero Card */}
+      <View style={styles.inventoryHeroCard}>
+        {/* Top Primary Stock Value Row */}
+        <View style={styles.heroTopRow}>
+          <View style={{ flex: 1, marginRight: 8 }}>
+            <Text style={styles.heroLabel}>Total Inventory Value</Text>
+            <Text
+              style={styles.heroStockValue}
+              numberOfLines={1}
+              adjustsFontSizeToFit={true}
+              minimumFontScale={0.7}
+            >
+              {currency} {totalInventoryValue.toLocaleString('en-US', { minimumFractionDigits: 0 })}
+            </Text>
+          </View>
+          <View style={styles.heroIconCircle}>
+            <Ionicons name="wallet-outline" size={20} color={COLORS.purple} />
+          </View>
+        </View>
+
+        <View style={styles.heroDivider} />
+
+        {/* 3-Column Metrics Bar (Products • Units • Low Stock) */}
+        <View style={styles.heroStatsRow}>
+          <View style={styles.heroStatCol}>
+            <Text style={styles.heroStatLabel}>Products</Text>
+            <Text style={styles.heroStatVal} numberOfLines={1}>{totalProductsCount}</Text>
+          </View>
+
+          <View style={styles.heroStatDivider} />
+
+          <View style={styles.heroStatCol}>
+            <Text style={styles.heroStatLabel}>Stock Units</Text>
+            <Text style={[styles.heroStatVal, { color: COLORS.green }]} numberOfLines={1}>
+              {totalUnitsCount}
+            </Text>
+          </View>
+
+          <View style={styles.heroStatDivider} />
+
+          <Pressable
+            style={({ pressed }) => [
+              styles.heroStatCol,
+              categoryFilter === 'Low Stock' && styles.lowStockActiveCol,
+              pressed && styles.pressed,
+            ]}
+            onPress={() => onCategoryFilterChange(categoryFilter === 'Low Stock' ? 'All' : 'Low Stock')}
+            accessibilityRole="button"
+            accessibilityLabel={`Low stock items: ${lowStockCount}. Tap to filter list`}
+          >
+            <View style={styles.lowStockLabelRow}>
+              <Ionicons name="warning-outline" size={12} color={COLORS.amber} />
+              <Text style={[styles.heroStatLabel, { color: COLORS.amber, fontWeight: '700' }]}>
+                Low Stock
+              </Text>
+            </View>
+            <Text style={[styles.heroStatVal, { color: COLORS.amber }]} numberOfLines={1}>
+              {lowStockCount} {categoryFilter === 'Low Stock' ? '✓' : ''}
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+
+      {/* Category & Low Stock Filter Pills */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ flexDirection: 'row', gap: 8, marginVertical: 8 }}
+      >
+        {categoryFilterOptions.map((cat) => {
+          const isActive = categoryFilter === cat;
+          const isLowStock = cat === 'Low Stock';
+          return (
+            <Pressable
+              key={cat}
+              style={({ pressed }) => [
+                styles.filterChip,
+                {
+                  backgroundColor: isActive
+                    ? isLowStock ? COLORS.amberBg : COLORS.greenBg
+                    : COLORS.card,
+                  borderColor: isActive
+                    ? isLowStock ? COLORS.amber : COLORS.green
+                    : COLORS.divider,
+                },
+                pressed && styles.pressed,
+              ]}
+              onPress={() => onCategoryFilterChange(cat)}
+              accessibilityRole="button"
+              accessibilityLabel={`Filter by ${cat}${isLowStock ? ` (${lowStockCount} items)` : ''}`}
+            >
+              {isLowStock && (
+                <Ionicons
+                  name="warning-outline"
+                  size={14}
+                  color={isActive ? COLORS.amber : COLORS.textSecondary}
+                />
+              )}
+              <Text
+                style={{
+                  fontSize: 13,
+                  fontWeight: isActive ? '700' : '500',
+                  color: isActive
+                    ? isLowStock ? COLORS.amber : COLORS.green
+                    : COLORS.textSecondary,
+                }}
+              >
+                {cat}{isLowStock ? ` (${lowStockCount})` : ''}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+
+      {/* Products List Header */}
+      <View style={styles.listHeaderRow}>
+        <Text style={styles.listHeaderTitle}>
+          All Products ({sortedProductsCount})
+        </Text>
+        <Pressable
+          style={({ pressed }) => [styles.sortDropdown, pressed && styles.pressed]}
+          onPress={onToggleSort}
+          accessibilityRole="button"
+          accessibilityLabel={`Sort order: ${sortBy}`}
+        >
+          <Text style={styles.sortText}>
+            Sort: {sortBy === 'name' ? 'Name' : sortBy === 'quantity' ? 'Stock Qty' : 'Price'}
+          </Text>
+          <Ionicons name="swap-vertical" size={14} color={COLORS.green} />
+        </Pressable>
+      </View>
+    </View>
+  );
+});
 
 export const InventoryScreen = ({ route, navigation }: any) => {
   const { products, settings, adjustStock } = useAppStore();
@@ -101,197 +306,8 @@ export const InventoryScreen = ({ route, navigation }: any) => {
     [settings.currency, adjustStock, navigation]
   );
 
-  const renderListHeader = useMemo(
-    () => (
-      <View style={styles.headerComponentContainer}>
-        {/* Search Bar & Filter Toggle */}
-        <View style={styles.searchRow}>
-          <View style={styles.searchContainer}>
-            <Ionicons name="search-outline" size={20} color={COLORS.textMuted} style={styles.searchIcon} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search products or categories..."
-              placeholderTextColor={COLORS.textMuted}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              accessibilityLabel="Search products"
-              accessibilityHint="Type a product name or category to filter list"
-            />
-            {searchQuery !== '' && (
-              <Pressable
-                onPress={() => setSearchQuery('')}
-                accessibilityRole="button"
-                accessibilityLabel="Clear search input"
-              >
-                <Ionicons name="close-circle" size={20} color={COLORS.textMuted} />
-              </Pressable>
-            )}
-          </View>
-
-          <Pressable
-            style={({ pressed }) => [styles.filterBtn, pressed && styles.pressed]}
-            onPress={toggleSort}
-            accessibilityRole="button"
-            accessibilityLabel={`Sort products by ${sortBy}`}
-            accessibilityHint="Toggles sorting between name, stock quantity, and price"
-          >
-            <Ionicons name="options-outline" size={20} color={COLORS.green} />
-          </Pressable>
-        </View>
-
-        {/* Single Consolidated Executive Inventory Hero Card (No Grid, No Horizontal Scroll) */}
-        <View style={styles.inventoryHeroCard}>
-          {/* Top Primary Stock Value Row */}
-          <View style={styles.heroTopRow}>
-            <View style={{ flex: 1, marginRight: 8 }}>
-              <Text style={styles.heroLabel}>Total Inventory Value</Text>
-              <Text
-                style={styles.heroStockValue}
-                numberOfLines={1}
-                adjustsFontSizeToFit={true}
-                minimumFontScale={0.7}
-              >
-                {settings.currency} {totalInventoryValue.toLocaleString('en-US', { minimumFractionDigits: 0 })}
-              </Text>
-            </View>
-            <View style={styles.heroIconCircle}>
-              <Ionicons name="wallet-outline" size={20} color={COLORS.purple} />
-            </View>
-          </View>
-
-          <View style={styles.heroDivider} />
-
-          {/* 3-Column Metrics Bar (Products • Units • Low Stock) */}
-          <View style={styles.heroStatsRow}>
-            <View style={styles.heroStatCol}>
-              <Text style={styles.heroStatLabel}>Products</Text>
-              <Text style={styles.heroStatVal} numberOfLines={1}>{totalProductsCount}</Text>
-            </View>
-
-            <View style={styles.heroStatDivider} />
-
-            <View style={styles.heroStatCol}>
-              <Text style={styles.heroStatLabel}>Stock Units</Text>
-              <Text style={[styles.heroStatVal, { color: COLORS.green }]} numberOfLines={1}>
-                {totalUnitsCount}
-              </Text>
-            </View>
-
-            <View style={styles.heroStatDivider} />
-
-            <Pressable
-              style={({ pressed }) => [
-                styles.heroStatCol,
-                categoryFilter === 'Low Stock' && styles.lowStockActiveCol,
-                pressed && styles.pressed,
-              ]}
-              onPress={() => setCategoryFilter(categoryFilter === 'Low Stock' ? 'All' : 'Low Stock')}
-              accessibilityRole="button"
-              accessibilityLabel={`Low stock items: ${lowStockCount}. Tap to filter list`}
-            >
-              <View style={styles.lowStockLabelRow}>
-                <Ionicons name="warning-outline" size={12} color={COLORS.amber} />
-                <Text style={[styles.heroStatLabel, { color: COLORS.amber, fontWeight: '700' }]}>
-                  Low Stock
-                </Text>
-              </View>
-              <Text style={[styles.heroStatVal, { color: COLORS.amber }]} numberOfLines={1}>
-                {lowStockCount} {categoryFilter === 'Low Stock' ? '✓' : ''}
-              </Text>
-            </Pressable>
-          </View>
-        </View>
-
-        {/* Category & Low Stock Filter Pills — IS-02: categories derived from live product data */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ flexDirection: 'row', gap: 8, marginVertical: 8 }}
-        >
-          {categoryFilterOptions.map((cat) => {
-            const isActive = categoryFilter === cat;
-            const isLowStock = cat === 'Low Stock';
-            return (
-              <Pressable
-                key={cat}
-                style={({ pressed }) => [
-                  styles.filterChip,
-                  {
-                    backgroundColor: isActive
-                      ? isLowStock
-                        ? COLORS.amberBg
-                        : COLORS.greenBg
-                      : COLORS.card,
-                    borderColor: isActive
-                      ? isLowStock
-                        ? COLORS.amber
-                        : COLORS.green
-                      : COLORS.divider,
-                  },
-                  pressed && styles.pressed,
-                ]}
-                onPress={() => setCategoryFilter(cat)}
-                accessibilityRole="button"
-                accessibilityLabel={`Filter by ${cat}${isLowStock ? ` (${lowStockCount} items)` : ''}`}
-              >
-                {isLowStock && (
-                  <Ionicons
-                    name="warning-outline"
-                    size={14}
-                    color={isActive ? COLORS.amber : COLORS.textSecondary}
-                  />
-                )}
-                <Text
-                  style={{
-                    fontSize: 13,
-                    fontWeight: isActive ? '700' : '500',
-                    color: isActive
-                      ? isLowStock
-                        ? COLORS.amber
-                        : COLORS.green
-                      : COLORS.textSecondary,
-                  }}
-                >
-                  {cat}{isLowStock ? ` (${lowStockCount})` : ''}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-
-        {/* Products List Header */}
-        <View style={styles.listHeaderRow}>
-          <Text style={styles.listHeaderTitle}>
-            All Products ({sortedProducts.length})
-          </Text>
-          <Pressable
-            style={({ pressed }) => [styles.sortDropdown, pressed && styles.pressed]}
-            onPress={toggleSort}
-            accessibilityRole="button"
-            accessibilityLabel={`Sort order: ${sortBy}`}
-          >
-            <Text style={styles.sortText}>
-              Sort: {sortBy === 'name' ? 'Name' : sortBy === 'quantity' ? 'Stock Qty' : 'Price'}
-            </Text>
-            <Ionicons name="swap-vertical" size={14} color={COLORS.green} />
-          </Pressable>
-        </View>
-      </View>
-    ),
-    [
-      searchQuery,
-      sortBy,
-      totalProductsCount,
-      totalUnitsCount,
-      totalInventoryValue,
-      settings.currency,
-      categoryFilter,
-      lowStockCount,
-      sortedProducts.length,
-      categoryFilterOptions,
-      toggleSort,
-    ]
-  );
+  // Header props collected here so the component gets stable references
+  // via the screen's existing useMemo/useCallback hooks.
 
   // IS-03: include products.length in deps so the message switches correctly
   // when the last product is added/removed while the list is open.
@@ -321,7 +337,23 @@ export const InventoryScreen = ({ route, navigation }: any) => {
         data={sortedProducts}
         keyExtractor={(item) => item.id}
         renderItem={renderProductItem}
-        ListHeaderComponent={renderListHeader}
+        ListHeaderComponent={
+          <InventoryListHeader
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            sortBy={sortBy}
+            onToggleSort={toggleSort}
+            currency={settings.currency}
+            totalInventoryValue={totalInventoryValue}
+            totalProductsCount={totalProductsCount}
+            totalUnitsCount={totalUnitsCount}
+            lowStockCount={lowStockCount}
+            categoryFilter={categoryFilter}
+            onCategoryFilterChange={setCategoryFilter}
+            categoryFilterOptions={categoryFilterOptions}
+            sortedProductsCount={sortedProducts.length}
+          />
+        }
         ListEmptyComponent={renderEmptyComponent}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}

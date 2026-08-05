@@ -180,8 +180,12 @@ const styles = StyleSheet.create({
   },
   container: {
     position: 'absolute',
+    // Span the full screen width so sub-fab labels have room to render.
+    // Without `left`, the container collapses to 60px (main FAB width) and
+    // the flex measurement constrains the label badge — causing truncation.
+    left: 0,
     right: 20,
-    alignItems: 'center',
+    alignItems: 'flex-end', // keeps main FAB pinned to the right
     zIndex: 20,
   },
   mainFab: {
@@ -199,20 +203,23 @@ const styles = StyleSheet.create({
   },
   subFabContainer: {
     position: 'absolute',
+    // Span the full available width so labels never get squeezed.
+    left: 0,
+    right: 0,
+    paddingRight: 4, // 4px offset perfectly centers 52px circle over 60px main FAB
     flexDirection: 'row',
     alignItems: 'center',
-    right: 4, // 4px offset perfectly centers 52px circle over 60px main FAB
-    justifyContent: 'flex-end',
+    justifyContent: 'flex-end', // icon sits at right, label is to its left
   },
   labelBadge: {
     backgroundColor: COLORS.card,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
-    marginRight: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+    marginRight: 10,
     borderWidth: 1,
     borderColor: COLORS.divider,
-    maxWidth: 130,
+    // No maxWidth — label should always be fully visible
     ...SHADOWS.small,
   },
   label: {

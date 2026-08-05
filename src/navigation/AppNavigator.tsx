@@ -25,6 +25,7 @@ import { RecordSaleModal } from '../screens/RecordSaleModal';
 import { ProductDetailsModal } from '../screens/ProductDetailsModal';
 import { MenuModal } from '../screens/MenuModal';
 import { StatementModal } from '../screens/StatementModal';
+import { ProfitBreakdownModal } from '../screens/ProfitBreakdownModal';
 import { GlobalSpeedDial } from '../components/GlobalSpeedDial';
 
 const Tab = createBottomTabNavigator();
@@ -162,6 +163,7 @@ export function AppNavigator() {
           <Stack.Screen name="Reports" component={ReportsScreen} />
           <Stack.Group screenOptions={{ presentation: 'modal' }}>
             <Stack.Screen name="StatementModal" component={StatementModal} />
+            <Stack.Screen name="ProfitBreakdown" component={ProfitBreakdownModal} />
             <Stack.Screen name="MenuModal" component={MenuModal} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
             <Stack.Screen name="AddEditProduct" component={AddEditProductModal} />

@@ -128,55 +128,54 @@ export const StatementModal = ({ route, navigation }: any) => {
   const renderTableHeader = useMemo(
     () => (
       <View style={styles.headerComponentContainer}>
-        {/* Statement Summary Card */}
-        <View
-          style={styles.summaryCard}
-          accessibilityRole="summary"
-          accessibilityLabel={`Account Statement for ${settings.businessName}. Total Inflow: ${settings.currency} ${totalIncome.toLocaleString()}. Total Outflow: ${settings.currency} ${totalExpenses.toLocaleString()}. Net Balance: ${settings.currency} ${netBalance.toLocaleString()}`}
-        >
-          <Text style={styles.businessTitle}>{settings.businessName}</Text>
-          <Text style={styles.statementSub}>Account Statement • Currency: {settings.currency}</Text>
 
-          <View style={styles.statsRow}>
-            <View style={styles.statCol}>
-              <Text style={styles.statLabel}>Total Inflow</Text>
-              <Text style={[styles.statValue, { color: COLORS.green }]}>
+        {/* ── Hero Summary Card (dark, clean) ──────────────────────────── */}
+        <View style={styles.heroCard}>
+          <View style={styles.heroTopRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.heroBusinessName} numberOfLines={1}>
+                {settings.businessName}
+              </Text>
+              <Text style={styles.heroSub}>Account Statement · {settings.currency}</Text>
+            </View>
+            <View style={styles.heroBadge}>
+              <Ionicons name="document-text-outline" size={14} color={COLORS.green} />
+              <Text style={styles.heroBadgeText}>LEDGER</Text>
+            </View>
+          </View>
+
+          {/* 3 metric columns */}
+          <View style={styles.heroMetrics}>
+            <View style={styles.heroMetricItem}>
+              <Text style={styles.heroMetricLabel}>Total Inflow</Text>
+              <Text style={[styles.heroMetricValue, { color: '#4ADE80' }]}>
                 +{settings.currency} {totalIncome.toLocaleString()}
               </Text>
             </View>
-
-            <View style={styles.dividerCol} />
-
-            <View style={styles.statCol}>
-              <Text style={styles.statLabel}>Total Outflow</Text>
-              <Text style={[styles.statValue, { color: COLORS.red }]}>
+            <View style={styles.heroMetricDivider} />
+            <View style={styles.heroMetricItem}>
+              <Text style={styles.heroMetricLabel}>Total Outflow</Text>
+              <Text style={[styles.heroMetricValue, { color: '#F87171' }]}>
                 -{settings.currency} {totalExpenses.toLocaleString()}
               </Text>
             </View>
-
-            <View style={styles.dividerCol} />
-
-            <View style={styles.statCol}>
-              <Text style={styles.statLabel}>Net Balance</Text>
-              <Text
-                style={[
-                  styles.statValue,
-                  { color: netBalance >= 0 ? COLORS.green : COLORS.red },
-                ]}
-              >
+            <View style={styles.heroMetricDivider} />
+            <View style={styles.heroMetricItem}>
+              <Text style={styles.heroMetricLabel}>Net Balance</Text>
+              <Text style={[styles.heroMetricValue, { color: netBalance >= 0 ? '#4ADE80' : '#F87171' }]}>
                 {settings.currency} {netBalance.toLocaleString()}
               </Text>
             </View>
           </View>
         </View>
 
-        {/* Filter Pills */}
-        <View style={styles.filterContainer}>
+        {/* ── Filter tabs (scrollable so they never overflow) ──────────── */}
+        <View style={styles.filterScrollWrapper}>
           {[
-            { id: 'all', label: 'All Entries' },
-            { id: 'income', label: 'Inflow (+)' },
-            { id: 'expense', label: 'Outflow (-)' },
-            { id: 'credit', label: 'Credit (Debt)' },
+            { id: 'all',     label: 'All Entries',   icon: 'list-outline' as const },
+            { id: 'income',  label: 'Inflow (+)',     icon: 'trending-up-outline' as const },
+            { id: 'expense', label: 'Outflow (-)',    icon: 'trending-down-outline' as const },
+            { id: 'credit',  label: 'Credit (Debt)', icon: 'card-outline' as const },
           ].map((item) => (
             <Pressable
               key={item.id}
@@ -189,21 +188,22 @@ export const StatementModal = ({ route, navigation }: any) => {
               accessibilityRole="button"
               accessibilityLabel={`Filter by ${item.label}`}
             >
-              <Text
-                style={[
-                  styles.filterChipText,
-                  filterType === item.id && styles.filterChipTextActive,
-                ]}
-              >
+              <Ionicons
+                name={item.icon}
+                size={13}
+                color={filterType === item.id ? COLORS.green : COLORS.textSecondary}
+              />
+              <Text style={[
+                styles.filterChipText,
+                filterType === item.id && styles.filterChipTextActive,
+              ]}>
                 {item.label}
               </Text>
             </Pressable>
           ))}
         </View>
 
-        {/* Tabular Statement Table Header */}
-        <Text style={styles.tableTitle}>Transaction Ledger Table ({tableData.length})</Text>
-
+        {/* ── Table header row ─────────────────────────────────────────── */}
         <View style={styles.tableHeaderRow}>
           <Text style={[styles.thCell, { flex: 2.2 }]}>Date / Item</Text>
           <Text style={[styles.thCell, { flex: 1.2, textAlign: 'center' }]}>Type</Text>
@@ -431,60 +431,88 @@ const styles = StyleSheet.create({
   headerComponentContainer: {
     marginBottom: 0,
   },
-  summaryCard: {
-    backgroundColor: COLORS.card,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    ...SHADOWS.small,
+
+  // ── Hero summary card ─────────────────────────────────────────────────────
+  heroCard: {
+    backgroundColor: COLORS.dark,
+    borderRadius: 18,
+    padding: 18,
+    marginBottom: 12,
+    gap: 14,
+    ...SHADOWS.medium,
   },
-  businessTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: COLORS.textPrimary,
-  },
-  statementSub: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    marginBottom: 14,
-  },
-  statsRow: {
+  heroTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderColor: COLORS.divider,
+    gap: 12,
   },
-  statCol: {
-    flex: 1,
+  heroBusinessName: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: -0.3,
   },
-  dividerCol: {
-    width: 1,
-    height: 28,
-    backgroundColor: COLORS.divider,
+  heroSub: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.5)',
+    marginTop: 2,
   },
-  statLabel: {
-    fontSize: 11,
-    color: COLORS.textSecondary,
-    marginBottom: 2,
-  },
-  statValue: {
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  filterContainer: {
+  heroBadge: {
     flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: COLORS.greenBg,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    flexShrink: 0,
+  },
+  heroBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: COLORS.green,
+    letterSpacing: 0.5,
+  },
+  heroMetrics: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderRadius: 12,
+    padding: 12,
+  },
+  heroMetricItem: { flex: 1, alignItems: 'center' },
+  heroMetricDivider: {
+    width: 1,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    marginHorizontal: 4,
+  },
+  heroMetricLabel: {
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.45)',
+    fontWeight: '600',
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  heroMetricValue: {
+    fontSize: 12,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+
+  // ── Filter strip (wraps naturally) ────────────────────────────────────────
+  filterScrollWrapper: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
-    marginBottom: 16,
+    marginBottom: 12,
   },
   filterChip: {
-    flex: 1,
-    minHeight: 44,
-    borderRadius: 10,
-    backgroundColor: COLORS.card,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: COLORS.card,
     borderWidth: 1,
     borderColor: COLORS.divider,
   },
@@ -500,12 +528,6 @@ const styles = StyleSheet.create({
   filterChipTextActive: {
     color: COLORS.green,
     fontWeight: '700',
-  },
-  tableTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: COLORS.textPrimary,
-    marginBottom: 10,
   },
   tableHeaderRow: {
     flexDirection: 'row',
