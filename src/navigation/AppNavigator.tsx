@@ -1,9 +1,10 @@
-import React, { useEffect, useRef } from 'react';
-import { View, AppState, AppStateStatus } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, ActivityIndicator, AppState, AppStateStatus } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as SecureStore from 'expo-secure-store';
 import { useAppStore } from '../store/useAppStore';
 import { COLORS } from '../theme/theme';
 
@@ -15,6 +16,7 @@ import { ReportsScreen } from '../screens/ReportsScreen';
 import { PrinteryScreen } from '../screens/PrinteryScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { LoginScreen } from '../screens/LoginScreen';
+import { OnboardingScreen } from '../screens/OnboardingScreen';
 
 // Modals
 import { AddEditProductModal } from '../screens/AddEditProductModal';
@@ -55,7 +57,7 @@ function BottomTabNavigator() {
             fontSize: 11,
             fontWeight: '600',
           },
-          tabBarIcon: ({ focused, color, size }) => {
+          tabBarIcon: ({ focused, color }) => {
             let iconName: keyof typeof Ionicons.glyphMap = 'home-outline';
 
             if (route.name === 'Home') {
@@ -82,42 +84,77 @@ function BottomTabNavigator() {
   );
 }
 
-export function AppNavigator() {
-  // isLoggedIn is now a top-level store property (not part of settings)
-  const { isLoggedIn, logout } = useAppStore();
+type AuthState = 'checking' | 'onboarding' | 'login' | 'app';
 
+export function AppNavigator() {
+  const { isLoggedIn, logout } = useAppStore();
+  const [authState, setAuthState] = useState<AuthState>('checking');
   const backgroundTimeRef = useRef<number | null>(null);
 
+  // ── Check SecureStore for PIN on first render ─────────────────────────────
+  useEffect(() => {
+    SecureStore.getItemAsync('SECURITY_PIN')
+      .then((pin) => {
+        if (!pin) {
+          setAuthState('onboarding');
+        } else {
+          setAuthState('login');
+        }
+      })
+      .catch(() => {
+        // If SecureStore fails, default to login screen
+        setAuthState('login');
+      });
+  }, []);
+
+  // ── Sync when isLoggedIn changes ──────────────────────────────────────────
+  useEffect(() => {
+    if (isLoggedIn) {
+      setAuthState('app');
+    } else if (authState === 'app') {
+      // Only revert to login (not onboarding) when logging out
+      setAuthState('login');
+    }
+  }, [isLoggedIn]);
+
+  // ── Background timeout logout (3-minute grace period) ─────────────────────
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
-      // Lock only when the app moves to the BACKGROUND — not on `inactive`.
-      // On iOS, `inactive` fires during phone calls, Siri, notification shade
-      // interactions, and app-switcher gestures. Logging out on `inactive`
-      // would cause constant unwanted logouts during normal device usage.
       if (nextAppState === 'background') {
         backgroundTimeRef.current = Date.now();
       } else if (nextAppState === 'active') {
         if (backgroundTimeRef.current) {
           const timeInBackground = Date.now() - backgroundTimeRef.current;
           const GRACE_PERIOD = 3 * 60 * 1000; // 3 minutes
-          if (timeInBackground > GRACE_PERIOD) {
-            if (isLoggedIn) {
-              logout();
-            }
+          if (timeInBackground > GRACE_PERIOD && isLoggedIn) {
+            logout();
           }
         }
         backgroundTimeRef.current = null;
       }
     });
 
-    return () => {
-      subscription.remove();
-    };
+    return () => subscription.remove();
   }, [isLoggedIn, logout]);
 
+  // ── Loading state ─────────────────────────────────────────────────────────
+  if (authState === 'checking') {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.background }}>
+        <ActivityIndicator size="large" color={COLORS.green} />
+      </View>
+    );
+  }
+
+  // ── Onboarding (first launch) ─────────────────────────────────────────────
+  if (authState === 'onboarding') {
+    return <OnboardingScreen />;
+  }
+
+  // ── Authenticated main app ────────────────────────────────────────────────
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {!isLoggedIn ? (
+      {authState === 'login' ? (
         <Stack.Screen name="Login" component={LoginScreen} />
       ) : (
         <>
