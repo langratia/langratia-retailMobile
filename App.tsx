@@ -9,6 +9,7 @@ import {
   Inter_600SemiBold,
   Inter_700Bold,
 } from '@expo-google-fonts/inter';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { COLORS } from './src/theme/theme';
 
@@ -29,11 +30,13 @@ export default function App() {
   }
 
   return (
-    <SafeAreaProvider>
-      <NavigationContainer>
-        <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} translucent={false} />
-        <AppNavigator />
-      </NavigationContainer>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <NavigationContainer>
+          <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} translucent={false} />
+          <AppNavigator />
+        </NavigationContainer>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

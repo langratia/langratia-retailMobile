@@ -42,7 +42,7 @@ interface AppState {
 }
 
 const initialSettings: BusinessSettings = {
-  businessName: 'IVAN A.K.A Electronics',
+  businessName: 'RetailFlow',
   ownerName: 'Ivan',
   currency: 'UGX',
   lowStockThreshold: 5,

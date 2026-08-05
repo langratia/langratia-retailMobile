@@ -1,22 +1,25 @@
 {
   "expo": {
-    "name": "IVAN A.K.A Electronics",
-    "slug": "ivan-aka-electronics",
+    "name": "RetailFlow",
+    "slug": "retail-flow",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/retailflow-splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.ivan.electronics"
+      "bundleIdentifier": "com.retailflow.app"
     },
     "android": {
-      "package": "com.ivan.electronics",
+      "package": "com.retailflow.app",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "backgroundColor": "#FFFFFF",
+        "foregroundImage": "./assets/icon.png"
       },
       "predictiveBackGestureEnabled": false
     },
@@ -25,14 +28,11 @@
       "backgroundColor": "#F8FAFC",
       "translucent": false
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    },
+    "web": {},
     "plugins": [
       "expo-asset",
       "expo-font",
-      "expo-secure-store",
-      "expo-local-authentication"
+      "expo-secure-store"
     ],
     "extra": {
       "eas": {

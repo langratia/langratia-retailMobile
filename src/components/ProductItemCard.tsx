@@ -4,21 +4,14 @@ import {
   Text,
   StyleSheet,
   Pressable,
-  LayoutAnimation,
   Platform,
-  UIManager,
 } from 'react-native';
+import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { Product } from '../types';
 import { COLORS, SHADOWS } from '../theme/theme';
 import { Badge } from './Badge';
 
-if (
-  Platform.OS === 'android' &&
-  UIManager.setLayoutAnimationEnabledExperimental
-) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 interface ProductItemCardProps {
   product: Product;
@@ -40,14 +33,13 @@ export const ProductItemCard = React.memo(({
   const [expanded, setExpanded] = useState(false);
 
   const toggleExpand = () => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpanded(!expanded);
   };
 
   const totalValue = product.quantity * product.buyPrice;
 
   return (
-    <View style={styles.card}>
+    <Animated.View style={styles.card} layout={LinearTransition.springify().damping(14)}>
       {/* Compact Main Row */}
       <Pressable
         style={({ pressed }) => [
@@ -84,7 +76,7 @@ export const ProductItemCard = React.memo(({
 
       {/* Slide-Down Expanded Details */}
       {expanded && (
-        <View style={styles.expandedContent}>
+        <Animated.View style={styles.expandedContent} entering={FadeIn} exiting={FadeOut}>
           <View style={styles.divider} />
 
           {/* 3-Column Metrics */}
@@ -181,9 +173,9 @@ export const ProductItemCard = React.memo(({
               <Text style={[styles.actionText, { color: COLORS.blue }]}>Details</Text>
             </Pressable>
           </View>
-        </View>
+        </Animated.View>
       )}
-    </View>
+    </Animated.View>
   );
 });
 

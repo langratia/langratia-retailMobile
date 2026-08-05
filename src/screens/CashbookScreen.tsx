@@ -104,7 +104,7 @@ export const CashbookScreen = ({ navigation }: any) => {
         // which shows all transactions. Removed misleading chevron for individual detail
         // — the Statement screen is the full ledger view.
         onPress={() => navigation.navigate('StatementModal')}
-        onLongPress={() => handleDeleteTransaction(item)}
+        onDelete={() => handleDeleteTransaction(item)}
       />
     ),
     [settings.currency, sortedTransactions.length, navigation, handleDeleteTransaction]
@@ -152,13 +152,6 @@ export const CashbookScreen = ({ navigation }: any) => {
           </View>
         </ScrollView>
 
-        {/* Tip: long-press to delete */}
-        <View style={styles.hintBanner}>
-          <Ionicons name="information-circle-outline" size={14} color={COLORS.textMuted} />
-          <Text style={styles.hintText}>Long-press any transaction to delete it</Text>
-        </View>
-
-        {/* Date / Type Filter Pills */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -316,21 +309,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 10,
     marginBottom: 20,
-  },
-  hintBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: COLORS.inputBg,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  hintText: {
-    fontSize: 12,
-    color: COLORS.textMuted,
-    fontWeight: '500',
   },
   filterPillsRow: {
     gap: 8,

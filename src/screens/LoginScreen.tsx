@@ -7,11 +7,12 @@ import {
   Platform,
   Alert,
   ScrollView,
-  Animated,
+  Animated as RNAnimated,
+  ImageBackground,
 } from 'react-native';
+import Animated, { FadeIn, FadeOut, SlideInUp, SlideOutUp } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
-import * as LocalAuthentication from 'expo-local-authentication';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../store/useAppStore';
 import { COLORS, SHADOWS } from '../theme/theme';
@@ -31,12 +32,6 @@ export const LoginScreen = () => {
   const [pin, setPin] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [correctPin, setCorrectPin] = useState<string | null>(null);
-  /**
-   * null  → not yet determined (SecureStore load in progress)
-   * true  → hardware available and enrolled → show biometric prompt
-   * false → PIN mode
-   */
-  const [isBiometricMode, setIsBiometricMode] = useState<boolean | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
   /**
    * Tracks consecutive failed attempts for rate-limiting.
@@ -45,19 +40,19 @@ export const LoginScreen = () => {
   const failedAttemptsRef = useRef<number>(0);
   const lockedUntilRef = useRef<number>(0);
 
-  const scaleAnim = useRef(new Animated.Value(0)).current;
-  const rotateAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new RNAnimated.Value(0)).current;
+  const rotateAnim = useRef(new RNAnimated.Value(0)).current;
 
   const playSuccessAnimation = useCallback(() => {
     setIsSuccess(true);
-    Animated.parallel([
-      Animated.spring(scaleAnim, {
+    RNAnimated.parallel([
+      RNAnimated.spring(scaleAnim, {
         toValue: 1,
         useNativeDriver: true,
         friction: 6,
         tension: 40,
       }),
-      Animated.timing(rotateAnim, {
+      RNAnimated.timing(rotateAnim, {
         toValue: 1,
         duration: 500,
         useNativeDriver: true,
@@ -93,24 +88,6 @@ export const LoginScreen = () => {
         setErrorMessage('Security store unavailable. Please restart the app.');
       }
       setCorrectPin(resolvedPin);
-
-      // Check for biometric capability
-      const hasHardware = await LocalAuthentication.hasHardwareAsync();
-      const isEnrolled = await LocalAuthentication.isEnrolledAsync();
-
-      if (hasHardware && isEnrolled) {
-        setIsBiometricMode(true);
-        const result = await LocalAuthentication.authenticateAsync({
-          promptMessage: `Unlock ${settings.businessName || 'IVAN A.K.A Electronics'}`,
-          fallbackLabel: 'Use PIN',
-          disableDeviceFallback: false,
-        });
-        if (result.success) {
-          playSuccessAnimation();
-        }
-      } else {
-        setIsBiometricMode(false);
-      }
     };
     loadPinAndBiometric();
     // playSuccessAnimation is stable (useCallback with stable deps)
@@ -197,352 +174,169 @@ export const LoginScreen = () => {
     validatePin(pin);
   }, [pin, validatePin]);
 
-  const handleBiometricAuth = useCallback(async () => {
-    const hasHardware = await LocalAuthentication.hasHardwareAsync();
-    const isEnrolled = await LocalAuthentication.isEnrolledAsync();
-
-    if (!hasHardware || !isEnrolled) {
-      return;
-    }
-
-    const result = await LocalAuthentication.authenticateAsync({
-      promptMessage: `Unlock ${settings.businessName || 'IVAN A.K.A Electronics'}`,
-      fallbackLabel: 'Use PIN',
-      disableDeviceFallback: false,
-    });
-
-    if (result.success) {
-      playSuccessAnimation();
-    }
-  }, [settings.businessName, playSuccessAnimation]);
-
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <View
-      style={[
-        styles.container,
-        { paddingTop: topPadding, paddingBottom: Math.max(insets.bottom, 20) },
-      ]}
+    <ImageBackground
+      source={require('../../assets/splash-image.png')}
+      style={styles.backgroundImage}
+      resizeMode="cover"
     >
-      {isSuccess ? (
-        <View style={styles.successContainer}>
-          <Animated.View
-            style={{
-              transform: [
-                { scale: scaleAnim },
-                {
-                  rotate: rotateAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: ['-120deg', '0deg'],
-                  }),
-                },
-              ],
-            }}
-          >
-            <Ionicons name="checkmark-circle" size={120} color={COLORS.green} />
-          </Animated.View>
-          <Animated.Text style={[styles.successText, { opacity: rotateAnim }]}>
-            Access Granted
-          </Animated.Text>
-        </View>
-      ) : (
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          bounces={false}
-        >
-          {/* Brand Logo & Splash Banner */}
-          <View style={styles.brandBox}>
-            <View style={styles.logoOuterGlow}>
-              <View style={styles.logoShieldFrame}>
-                <View style={styles.logoBadgeInner}>
-                  <View style={styles.monogramRow}>
-                    <Text style={styles.monogramLetterI}>I</Text>
-                    <Text style={styles.monogramLetterE}>E</Text>
-                  </View>
-                  <View style={styles.logoPowerCrown}>
-                    <Ionicons name="flash" size={12} color="#FFFFFF" />
-                  </View>
-                </View>
-              </View>
-            </View>
-
-            <View style={styles.techIconsRow}>
-              <View style={styles.techPill}>
-                <Ionicons name="phone-portrait-outline" size={14} color={COLORS.green} />
-                <Text style={styles.techPillText}>Smartphones</Text>
-              </View>
-              <View style={styles.techPill}>
-                <Ionicons name="headset-outline" size={14} color={COLORS.green} />
-                <Text style={styles.techPillText}>Audio</Text>
-              </View>
-              <View style={styles.techPill}>
-                <Ionicons name="laptop-outline" size={14} color={COLORS.green} />
-                <Text style={styles.techPillText}>Electronics</Text>
-              </View>
-            </View>
-
-            <Text style={styles.appName}>
-              {settings.businessName || 'IVAN A.K.A Electronics'}
-            </Text>
-            <Text style={styles.appSubTitle}>RETAIL & ELECTRONICS MANAGEMENT SYSTEM</Text>
-
-            <View style={styles.dividerLine} />
-
-            <Text style={styles.appTagline}>
-              {isBiometricMode
-                ? 'App is locked. Touch the fingerprint sensor to open.'
-                : 'Enter 4-digit PIN to open application'}
-            </Text>
+      <View
+        style={[
+          styles.overlay,
+          { paddingTop: topPadding, paddingBottom: Math.max(insets.bottom, 20) },
+        ]}
+      >
+        {isSuccess ? (
+          <View style={styles.successContainer}>
+            <RNAnimated.View
+              style={{
+                transform: [
+                  { scale: scaleAnim },
+                  {
+                    rotate: rotateAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ['-120deg', '0deg'],
+                    }),
+                  },
+                ],
+              }}
+            >
+              <Ionicons name="checkmark-circle" size={120} color={COLORS.green} />
+            </RNAnimated.View>
+            <RNAnimated.Text style={[styles.successText, { opacity: rotateAnim }]}>
+              Access Granted
+            </RNAnimated.Text>
           </View>
-
-          {isBiometricMode === true ? (
-            <View style={styles.biometricContainer}>
-              <Ionicons name="lock-closed" size={48} color={COLORS.green} style={{ marginBottom: 16 }} />
-              <Text style={styles.biometricTitle}>App Locked</Text>
-
-              <Pressable
-                style={({ pressed }) => [
-                  styles.quickUnlockBtn,
-                  { marginTop: 24, width: 220 },
-                  pressed && styles.quickUnlockPressed,
-                ]}
-                onPress={handleBiometricAuth}
-                accessibilityRole="button"
-                accessibilityLabel="Unlock with biometrics"
-              >
-                <Ionicons name="finger-print" size={20} color="#FFFFFF" />
-                <Text style={styles.quickUnlockText}>UNLOCK</Text>
-              </Pressable>
-
-              <Pressable
-                style={{ marginTop: 24, padding: 12 }}
-                onPress={() => setIsBiometricMode(false)}
-                accessibilityRole="button"
-                accessibilityLabel="Switch to PIN entry"
-              >
-                <Text style={{ color: COLORS.textSecondary, fontSize: 13, fontWeight: '600' }}>
-                  Use App PIN Instead
-                </Text>
-              </Pressable>
+        ) : (
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            bounces={false}
+          >
+            {/* Header Tagline */}
+            <View style={styles.headerBox}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.appTagline}>
+                Enter 4-digit PIN to open application
+              </Text>
             </View>
-          ) : (
-            <>
-              {/* Error / Rate-limit feedback banner */}
-              {errorMessage !== '' && (
-                <View style={styles.errorBanner}>
-                  <Ionicons name="alert-circle" size={16} color={COLORS.red} />
-                  <Text style={styles.errorBannerText}>{errorMessage}</Text>
-                </View>
-              )}
 
-              {/* PIN Indicator Dots */}
-              <View style={styles.pinIndicatorRow}>
-                {[0, 1, 2, 3].map((idx) => {
-                  const isFilled = pin.length > idx;
-                  return (
-                    <View
-                      key={idx}
-                      style={[
-                        styles.pinDot,
-                        isFilled && styles.pinDotFilled,
-                        errorMessage !== '' && styles.pinDotError,
-                      ]}
-                    />
-                  );
-                })}
-              </View>
-
-              {/* 3×4 Numeric Keypad */}
-              <View style={styles.keypadGrid}>
-                {[['1', '2', '3'], ['4', '5', '6'], ['7', '8', '9']].map((row, rIdx) => (
-                  <View key={rIdx} style={styles.keypadRow}>
-                    {row.map((num) => (
-                      <Pressable
-                        key={num}
-                        style={({ pressed }) => [
-                          styles.keyBtn,
-                          pressed && styles.keyBtnPressed,
-                        ]}
-                        onPress={() => handleKeyPress(num)}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Keypad digit ${num}`}
-                      >
-                        <Text style={styles.keyText}>{num}</Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                ))}
-
-                {/* Bottom row: empty, 0, backspace */}
-                <View style={styles.keypadRow}>
-                  <View style={[styles.keyBtn, styles.keyBtnInvisible]} />
-
-                  <Pressable
-                    style={({ pressed }) => [styles.keyBtn, pressed && styles.keyBtnPressed]}
-                    onPress={() => handleKeyPress('0')}
-                    accessibilityRole="button"
-                    accessibilityLabel="Keypad digit 0"
-                  >
-                    <Text style={styles.keyText}>0</Text>
-                  </Pressable>
-
-                  <Pressable
-                    style={({ pressed }) => [
-                      styles.keyBtn,
-                      styles.iconKeyBtn,
-                      pressed && styles.keyBtnPressed,
-                    ]}
-                    onPress={handleDelete}
-                    accessibilityRole="button"
-                    accessibilityLabel="Backspace digit"
-                  >
-                    <Ionicons name="backspace-outline" size={24} color={COLORS.textSecondary} />
-                  </Pressable>
-                </View>
-              </View>
-
-              {/* Submit button */}
-              <Pressable
-                style={({ pressed }) => [
-                  styles.quickUnlockBtn,
-                  pressed && styles.quickUnlockPressed,
-                ]}
-                onPress={handleManualLogin}
-                accessibilityRole="button"
-                accessibilityLabel="Validate 4-digit PIN and open application"
+          <>
+            {/* Error / Rate-limit feedback banner */}
+            {errorMessage !== '' && (
+              <Animated.View
+                entering={FadeIn.duration(300)}
+                exiting={FadeOut.duration(200)}
+                style={styles.errorBanner}
               >
-                <Ionicons name="lock-open-outline" size={20} color="#FFFFFF" />
-                <Text style={styles.quickUnlockText}>ENTER APPLICATION</Text>
-              </Pressable>
-            </>
-          )}
+                <Ionicons name="alert-circle" size={16} color={COLORS.red} />
+                <Text style={styles.errorBannerText}>{errorMessage}</Text>
+              </Animated.View>
+            )}
+
+            {/* PIN Indicator Dots */}
+            <View style={styles.pinIndicatorRow}>
+              {[0, 1, 2, 3].map((idx) => {
+                const isFilled = pin.length > idx;
+                return (
+                  <View
+                    key={idx}
+                    style={[
+                      styles.pinDot,
+                      isFilled && styles.pinDotFilled,
+                      errorMessage !== '' && styles.pinDotError,
+                    ]}
+                  />
+                );
+              })}
+            </View>
+
+            {/* 3×4 Numeric Keypad */}
+            <View style={styles.keypadGrid}>
+              {[['1', '2', '3'], ['4', '5', '6'], ['7', '8', '9']].map((row, rIdx) => (
+                <View key={rIdx} style={styles.keypadRow}>
+                  {row.map((num) => (
+                    <Pressable
+                      key={num}
+                      style={styles.keyBtn}
+                      onPress={() => handleKeyPress(num)}
+                      android_ripple={{ color: COLORS.greenBg, borderless: false, radius: 32 }}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Keypad digit ${num}`}
+                    >
+                      <Text style={styles.keyText}>{num}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              ))}
+
+              {/* Bottom row: empty, 0, backspace */}
+              <View style={styles.keypadRow}>
+                <View style={[styles.keyBtn, styles.keyBtnInvisible]} />
+
+                <Pressable
+                  style={styles.keyBtn}
+                  onPress={() => handleKeyPress('0')}
+                  android_ripple={{ color: COLORS.greenBg, borderless: false, radius: 32 }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Keypad digit 0"
+                >
+                  <Text style={styles.keyText}>0</Text>
+                </Pressable>
+
+                <Pressable
+                  style={[styles.keyBtn, styles.iconKeyBtn]}
+                  onPress={handleDelete}
+                  android_ripple={{ color: COLORS.greenBg, borderless: false, radius: 32 }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Backspace digit"
+                >
+                  <Ionicons name="backspace-outline" size={24} color={COLORS.textSecondary} />
+                </Pressable>
+              </View>
+            </View>
+
+            {/* Submit button */}
+            <Pressable
+              style={styles.quickUnlockBtn}
+              onPress={handleManualLogin}
+              android_ripple={{ color: 'rgba(0,0,0,0.1)' }}
+              accessibilityRole="button"
+              accessibilityLabel="Validate 4-digit PIN and open application"
+            >
+              <Ionicons name="lock-open-outline" size={20} color="#FFFFFF" />
+              <Text style={styles.quickUnlockText}>ENTER APPLICATION</Text>
+            </Pressable>
+          </>
         </ScrollView>
-      )}
-    </View>
+        )}
+      </View>
+    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  backgroundImage: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    width: '100%',
+    height: '100%',
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.75)',
   },
   scrollContent: {
     alignItems: 'center',
     paddingHorizontal: 28,
     paddingVertical: 12,
   },
-  brandBox: {
+  headerBox: {
     alignItems: 'center',
-    marginBottom: 20,
+    marginTop: 40,
+    marginBottom: 24,
     width: '100%',
-  },
-  logoOuterGlow: {
-    width: 104,
-    height: 104,
-    borderRadius: 52,
-    backgroundColor: 'rgba(16, 185, 129, 0.08)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-    borderWidth: 1.5,
-    borderColor: 'rgba(16, 185, 129, 0.25)',
-    ...SHADOWS.medium,
-  },
-  logoShieldFrame: {
-    width: 88,
-    height: 88,
-    borderRadius: 24,
-    backgroundColor: COLORS.greenBg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2.5,
-    borderColor: COLORS.green,
-    transform: [{ rotate: '45deg' }],
-  },
-  logoBadgeInner: {
-    width: 66,
-    height: 66,
-    borderRadius: 18,
-    backgroundColor: COLORS.card,
-    alignItems: 'center',
-    justifyContent: 'center',
-    transform: [{ rotate: '-45deg' }],
-    borderWidth: 1.5,
-    borderColor: 'rgba(16, 185, 129, 0.3)',
-    position: 'relative',
-    ...SHADOWS.small,
-  },
-  monogramRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  monogramLetterI: {
-    fontSize: 28,
-    fontWeight: '900',
-    color: COLORS.green,
-    letterSpacing: -1,
-  },
-  monogramLetterE: {
-    fontSize: 28,
-    fontWeight: '900',
-    color: COLORS.textPrimary,
-    marginLeft: 1,
-    letterSpacing: -1,
-  },
-  logoPowerCrown: {
-    position: 'absolute',
-    top: -6,
-    right: -6,
-    backgroundColor: COLORS.green,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: COLORS.card,
-    ...SHADOWS.small,
-  },
-  techIconsRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 14,
-  },
-  techPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: COLORS.card,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.divider,
-  },
-  techPillText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
-  },
-  appName: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: COLORS.textPrimary,
-    marginBottom: 4,
-    textAlign: 'center',
-    letterSpacing: 0.3,
-  },
-  appSubTitle: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: COLORS.green,
-    letterSpacing: 1.2,
-    marginBottom: 12,
-    textAlign: 'center',
   },
   dividerLine: {
     width: 60,
@@ -628,11 +422,6 @@ const styles = StyleSheet.create({
   iconKeyBtn: {
     backgroundColor: COLORS.card,
   },
-  keyBtnPressed: {
-    backgroundColor: COLORS.greenBg,
-    borderColor: COLORS.green,
-    transform: [{ scale: 0.95 }],
-  },
   keyText: {
     fontSize: 22,
     fontWeight: '700',
@@ -649,27 +438,10 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     backgroundColor: COLORS.green,
     ...SHADOWS.medium,
-  },
-  quickUnlockPressed: {
-    opacity: 0.85,
-    transform: [{ scale: 0.98 }],
+    overflow: 'hidden',
   },
   quickUnlockText: {
     fontSize: 14,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    letterSpacing: 0.8,
-  },
-  biometricContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 20,
-    width: '100%',
-  },
-  biometricTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: COLORS.textPrimary,
   },
   successContainer: {
     flex: 1,

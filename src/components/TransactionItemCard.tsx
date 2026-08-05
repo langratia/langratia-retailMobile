@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Swipeable from 'react-native-gesture-handler/Swipeable';
 import { Transaction } from '../types';
 import { COLORS } from '../theme/theme';
 
@@ -9,6 +10,7 @@ interface TransactionItemCardProps {
   currency?: string;
   onPress?: () => void;
   onLongPress?: () => void;
+  onDelete?: () => void;
   isLastItem?: boolean;
 }
 
@@ -17,6 +19,7 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = React.mem
   currency = 'UGX',
   onPress,
   onLongPress,
+  onDelete,
   isLastItem = false,
 }) => {
   const isCredit = transaction.isCredit;
@@ -45,8 +48,28 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = React.mem
 
   const formattedAmount = `${amountSign}${currency} ${transaction.amount.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 
+  const renderRightActions = (progress: Animated.AnimatedInterpolation<number>, dragX: Animated.AnimatedInterpolation<number>) => {
+    const scale = dragX.interpolate({
+      inputRange: [-100, 0],
+      outputRange: [1, 0.5],
+      extrapolate: 'clamp',
+    });
+    return (
+      <Pressable style={styles.deleteAction} onPress={onDelete}>
+        <Animated.View style={{ transform: [{ scale }] }}>
+          <Ionicons name="trash-outline" size={24} color="#FFFFFF" />
+        </Animated.View>
+      </Pressable>
+    );
+  };
+
   return (
-    <Pressable
+    <Swipeable
+      renderRightActions={onDelete ? renderRightActions : undefined}
+      friction={2}
+      rightThreshold={40}
+    >
+      <Pressable
       style={({ pressed }) => [
         styles.container,
         isLastItem && { borderBottomWidth: 0 },
@@ -95,7 +118,8 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = React.mem
       </View>
 
       <Ionicons name="chevron-forward" size={14} color={COLORS.textMuted} style={styles.chevron} />
-    </Pressable>
+      </Pressable>
+    </Swipeable>
   );
 });
 
@@ -179,5 +203,14 @@ const styles = StyleSheet.create({
   chevron: {
     marginLeft: 2,
     flexShrink: 0,
+  },
+  deleteAction: {
+    backgroundColor: COLORS.red,
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+    paddingRight: 20,
+    width: 100,
+    borderBottomWidth: 1,
+    borderColor: COLORS.divider,
   },
 });

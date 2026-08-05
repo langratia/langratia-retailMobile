@@ -1,5 +1,5 @@
 {
-  "name": "ivan-aka-electronics-mobile",
+  "name": "retail-flow-mobile",
   "version": "1.0.0",
   "main": "index.ts",
   "scripts": {
@@ -19,7 +19,7 @@
     "expo": "~54.0.0",
     "expo-asset": "~12.0.13",
     "expo-font": "~14.0.12",
-    "expo-local-authentication": "~17.0.8",
+    "expo-linear-gradient": "~15.0.8",
     "expo-print": "~15.0.8",
     "expo-secure-store": "~15.0.8",
     "expo-sharing": "~14.0.8",

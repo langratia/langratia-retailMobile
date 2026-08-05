@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ScrollView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppStore } from '../store/useAppStore';
 import { COLORS } from '../theme/theme';
 import { Header } from '../components/Header';
@@ -128,8 +129,8 @@ export const HomeScreen = ({ navigation }: any) => {
   );
 
   return (
-    <View style={styles.container}>
-      <Header title={settings.businessName || 'IVAN A.K.A Electronics'} />
+    <SafeAreaView style={styles.container}>
+      <Header title={settings.businessName || 'RetailFlow'} />
 
       {/* Removed cosmetic RefreshControl — store is synchronous/reactive */}
       <ScrollView
@@ -185,7 +186,7 @@ export const HomeScreen = ({ navigation }: any) => {
           onViewCashbook={() => navigation.navigate('Cashbook')}
         />
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 

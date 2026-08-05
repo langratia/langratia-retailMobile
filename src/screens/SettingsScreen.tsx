@@ -111,8 +111,8 @@ export const SettingsScreen = ({ navigation }: any) => {
             resetAllData();
             // SS-02: Sync local form state with the actual reset values from the store,
             // not hardcoded strings that differ from initialSettings.
-            setBusinessName('IVAN A.K.A Electronics');
-            setOwnerName('Ivan');
+            setBusinessName('RetailFlow');
+            setOwnerName('Admin');
             setCurrency('UGX');
             setLowStockThreshold('5');
             setSuccessConfig({
